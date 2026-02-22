@@ -50,6 +50,8 @@ You can enable it with `xray true` background effect [window](./Configuration:-W
 Xray is automatically enabled by default if any other background effect (like blur) is active.
 This is because it's much more efficient: with xray active, niri only needs to blur the background once, and then can reuse this blurred version with no extra work (since the wallpaper changes very rarely).
 
+If you have an animated wallpaper, xray will still have to recompute blur every frame, but that happens once and shared among all windows, rather than recomputed separately for each window.
+
 #### Non-xray effects (experimental)
 
 You can disable xray with `xray false` background effect window rule.
