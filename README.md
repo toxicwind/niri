@@ -1,23 +1,28 @@
-# AppleMax For Niri (Forked Readme)
+# toxicwind/niri
 
-This is the fork-facing entrypoint for the AppleMax profile pack.
+Fork of [YaLTeR/niri](https://github.com/YaLTeR/niri) for experimental profiles, UX polish, and downstream customization.
 
-Original readme preserved here:
-- [README.md.orig](./contrib/applemax-profile/README.md.orig)
+## Upstream
+- Upstream project: [YaLTeR/niri](https://github.com/YaLTeR/niri)
+- Upstream docs: [niri-wm.github.io/niri](https://niri-wm.github.io/niri/)
 
-## Quick Pull
+## Fork Tracks
+- `contrib/applemax-profile/`: AppleMax modular profile pack
+  - Entry readme: [contrib/applemax-profile/README.md](./contrib/applemax-profile/README.md)
+  - Original profile readme snapshot: [contrib/applemax-profile/README.md.orig](./contrib/applemax-profile/README.md.orig)
+
+More tracks can be added under `contrib/` without redefining this root README.
+
+## Quick Start (AppleMax Track)
 ```bash
-git clone --branch codex/applemax-profile-pack https://github.com/toxicwind/niri.git
+git clone https://github.com/toxicwind/niri.git
 cd niri/contrib/applemax-profile
 ./install.sh
-```
-
-## Apply
-```bash
 niri validate -c ~/.config/niri/config.kdl
 niri msg action load-config-file
 ```
 
-## Notes
-- This pack is downstream and Niri-native; upstream compositor remains [YaLTeR/niri](https://github.com/YaLTeR/niri).
-- Edit routing first if apps open on unexpected workspaces: `mods.available/72-window-routing-rules.kdl`.
+## Fork Policy
+- Keep upstream Niri as the compositor base.
+- Keep profile packs modular and isolated under `contrib/`.
+- Prefer additive patches over invasive rewrites.
