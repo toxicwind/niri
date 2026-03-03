@@ -1,0 +1,4 @@
+# Local scratch and backups used while tuning.
+*.bak
+*.local.kdl
+*.tmp.kdl

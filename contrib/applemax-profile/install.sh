@@ -39,6 +39,9 @@ mkdir -p "${APEX_DIR}/mods.available" "${APEX_DIR}/mods.enabled" "${NIRI_DIR}"
 
 cp -f "${SRC_DIR}/active.kdl" "${APEX_DIR}/active.kdl"
 cp -f "${SRC_DIR}/mods.available"/*.kdl "${APEX_DIR}/mods.available/"
+# Clean up legacy module name from previous pack versions.
+rm -f "${APEX_DIR}/mods.available/90-backdrop-wallpaper.kdl" \
+      "${APEX_DIR}/mods.enabled/90-backdrop-wallpaper.kdl"
 
 # Enable only executable profile modules (exclude template files).
 for f in "${APEX_DIR}/mods.available"/*.kdl; do
@@ -58,7 +61,7 @@ if [[ -f "${CONFIG_FILE}" ]]; then
     printf "\n%s\n" "${INCLUDE_LINE}" >> "${CONFIG_FILE}"
   fi
 else
-  printf "%s\n" "${INCLUDE_LINE}" > "${CONFIG_FILE}"
+  cp -f "${SRC_DIR}/config.example.kdl" "${CONFIG_FILE}"
 fi
 
 echo "Installed AppleMax profile for user: ${USER:-unknown}"
