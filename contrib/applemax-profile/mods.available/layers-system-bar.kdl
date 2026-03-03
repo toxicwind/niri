@@ -1,4 +1,9 @@
 layer-rule {
-  match namespace="waybar"
+  match namespace="^waybar$"
+  opacity 0.92
+}
+
+layer-rule {
+  match namespace="^dms:bar$"
   opacity 0.92
 }
