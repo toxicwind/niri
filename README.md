@@ -3,7 +3,7 @@
 This is the fork-facing entrypoint for the AppleMax profile pack.
 
 Original readme preserved here:
-- [README.md.orig](./README.md.orig)
+- [README.md.orig](./contrib/applemax-profile/README.md.orig)
 
 ## Quick Pull
 ```bash
