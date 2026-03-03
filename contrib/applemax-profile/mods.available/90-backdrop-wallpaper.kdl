@@ -1,0 +1,7 @@
+// APEX MOD: Put a wallpaper layer inside the overview backdrop (since 25.05)
+// Requires a wallpaper layer surface whose namespace matches ^wallpaper$.
+// Use `niri msg layers` to confirm namespace.
+// layer-rule {
+//   match namespace="^wallpaper$"
+//   place-within-backdrop true
+// }

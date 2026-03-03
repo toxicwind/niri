@@ -1,0 +1,25 @@
+layout {
+  gaps 12
+
+  always-center-single-column
+  center-focused-column "never"
+
+  focus-ring {
+    on
+    width 2
+    active-color "#A7D0FF"
+    inactive-color "#2A2A2A"
+  }
+
+  border {
+    off
+  }
+
+  shadow {
+    on
+    softness 42
+    spread 6
+    offset x=0 y=10
+    color "#00000066"
+  }
+}

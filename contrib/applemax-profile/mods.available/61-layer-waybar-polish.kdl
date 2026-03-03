@@ -1,0 +1,4 @@
+layer-rule {
+  match namespace="waybar"
+  opacity 0.92
+}

@@ -1,0 +1,23 @@
+recent-windows {
+  debounce-ms 450
+  open-delay-ms 90
+
+  highlight {
+    active-color "#FFFFFF16"
+    urgent-color "#FF6B6B55"
+    padding 26
+    corner-radius 16
+  }
+
+  previews {
+    max-height 720
+    max-scale 0.60
+  }
+
+  binds {
+    Alt+Tab         { next-window scope="output"; }
+    Alt+Shift+Tab   { previous-window scope="output"; }
+    Alt+grave       { next-window filter="app-id" scope="output"; }
+    Alt+Shift+grave { previous-window filter="app-id" scope="output"; }
+  }
+}
