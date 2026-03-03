@@ -22,7 +22,7 @@ Fork of [YaLTeR/niri](https://github.com/YaLTeR/niri) focused on downstream prof
 
 Run helper directly from repo:
 ```bash
-./helpers/niri-applemax-helper.sh --reload
+./helpers/niri-applemax-helper.sh
 ```
 
 ## Quick Start

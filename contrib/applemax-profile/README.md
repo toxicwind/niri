@@ -28,7 +28,7 @@ niri msg action load-config-file
 ## Diagnose (Fork Helper)
 ```bash
 cd ~/path/to/niri-fork
-./helpers/niri-applemax-helper.sh --reload
+./helpers/niri-applemax-helper.sh
 ```
 
 ## Safety Defaults
