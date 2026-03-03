@@ -1,0 +1,27 @@
+config-notification {
+  disable-failed
+}
+
+environment {
+  GTK_THEME "WhiteSur-Dark"
+}
+
+input {
+  mod-key "Super"
+
+  keyboard {
+    repeat-rate 32
+    repeat-delay 240
+  }
+
+  mouse {
+    accel-profile "adaptive"
+    accel-speed 0.15
+  }
+
+  touchpad {
+    off
+  }
+}
+
+include "apex/active.kdl"

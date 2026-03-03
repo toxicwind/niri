@@ -1,0 +1,16 @@
+window-rule {
+  match app-id=r#"^org\.telegram\.desktop$"#
+  open-on-workspace "chat"
+}
+
+// Firefox is intentionally not pinned to a named workspace,
+// so new windows open where you're currently working.
+window-rule {
+  match app-id=r#"^firefox$"#
+  open-maximized true
+}
+
+window-rule {
+  match app-id=r#"^com\.spotify\.Client$"#
+  open-on-workspace "media"
+}

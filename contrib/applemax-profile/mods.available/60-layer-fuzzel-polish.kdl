@@ -1,0 +1,14 @@
+layer-rule {
+  match namespace="^launcher$"
+  opacity 0.98
+  geometry-corner-radius 14
+
+  shadow {
+    on
+    softness 40
+    spread 6
+    offset x=0 y=10
+    draw-behind-window true
+    color "#00000064"
+  }
+}

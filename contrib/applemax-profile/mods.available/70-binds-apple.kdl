@@ -1,0 +1,9 @@
+binds {
+  Mod+Space { spawn "~/.config/apex/scripts/apex-launcher"; }
+
+  F3    { toggle-overview; }
+  Mod+O { toggle-overview; }
+
+  Mod+MouseBack    { focus-workspace-down; }
+  Mod+MouseForward { focus-workspace-up; }
+}

@@ -1,0 +1,31 @@
+// PiP stabilization for video pop-outs (Firefox/Zen/Chromium family)
+window-rule {
+  match title=r#"^Picture-in-Picture$"#
+  match app-id=r#"^firefox$"# title=r#"^Picture-in-Picture$"#
+  match app-id=r#"^zen$"# title=r#"^Picture-in-Picture$"#
+  match app-id=r#"^chromium$"# title=r#"^Picture-in-Picture$"#
+  match app-id=r#"^google-chrome$"# title=r#"^Picture-in-Picture$"#
+
+  open-floating true
+  open-focused false
+  open-on-output "DP-2"
+
+  // Keep PiP in true overlay dimensions.
+  default-column-width {
+    fixed 480
+  }
+  default-window-height {
+    fixed 270
+  }
+  min-width 320
+  min-height 180
+  max-width 640
+  max-height 360
+
+  default-floating-position x=24 y=24 relative-to="bottom-right"
+
+  geometry-corner-radius 10
+  clip-to-geometry true
+  variable-refresh-rate true
+  scroll-factor 1.0
+}

@@ -1,0 +1,7 @@
+workspace "work"
+
+workspace "chat" {
+  open-on-output "DP-2"
+}
+
+workspace "media"

@@ -1,0 +1,16 @@
+// APEX active mods — AppleMax profile
+
+include "mods.enabled/10-layout-glass.kdl"
+include "mods.enabled/20-animations-apple.kdl"
+include "mods.enabled/30-overview-mission.kdl"
+include "mods.enabled/31-gestures-dnd-edges.kdl"
+include "mods.enabled/32-hot-corners-top-left.kdl"
+include "mods.enabled/40-recent-windows-switcher.kdl"
+include "mods.enabled/50-window-rules-surface.kdl"
+include "mods.enabled/60-layer-fuzzel-polish.kdl"
+include "mods.enabled/61-layer-waybar-polish.kdl"
+include "mods.enabled/62-backdrop-wallpaper.kdl"
+include "mods.enabled/70-binds-apple.kdl"
+include "mods.enabled/71-named-workspaces.kdl"
+include "mods.enabled/72-window-routing-rules.kdl"
+include "mods.enabled/73-pip-fix.kdl"
