@@ -1,18 +1,18 @@
-// APEX active mods — AppleMax profile (safe defaults)
+// AppleMax default profile (semantic patch naming)
+include "mods.enabled/layout-staging.kdl"
+include "mods.enabled/animations-springs.kdl"
+include "mods.enabled/overview-mission-control.kdl"
+include "mods.enabled/gestures-edge-navigation.kdl"
+include "mods.enabled/gestures-hot-corners.kdl"
+include "mods.enabled/switcher-recent-windows.kdl"
+include "mods.enabled/windows-surface.kdl"
+include "mods.enabled/layers-launcher-glass.kdl"
+include "mods.enabled/layers-system-bar.kdl"
+include "mods.enabled/layers-backdrop-wallpaper.kdl"
+include "mods.enabled/layers-notifications-glass.kdl"
+include "mods.enabled/binds-apple-primitives.kdl"
+include "mods.enabled/workspaces-named.kdl"
+include "mods.enabled/pip-video-floating.kdl"
 
-include "mods.enabled/10-layout-glass.kdl"
-include "mods.enabled/20-animations-apple.kdl"
-include "mods.enabled/30-overview-mission.kdl"
-include "mods.enabled/31-gestures-dnd-edges.kdl"
-include "mods.enabled/32-hot-corners-top-left.kdl"
-include "mods.enabled/40-recent-windows-switcher.kdl"
-include "mods.enabled/50-window-rules-surface.kdl"
-include "mods.enabled/60-layer-fuzzel-polish.kdl"
-include "mods.enabled/61-layer-waybar-polish.kdl"
-include "mods.enabled/62-backdrop-wallpaper.kdl"
-include "mods.enabled/70-binds-apple.kdl"
-include "mods.enabled/71-named-workspaces.kdl"
-include "mods.enabled/73-pip-fix.kdl"
-
-// Opt-in only: app routing can move windows to other workspaces.
-// include "mods.enabled/72-window-routing-rules.kdl"
+// Optional by design (can move apps unexpectedly):
+// include "mods.enabled/routing-apps.kdl"

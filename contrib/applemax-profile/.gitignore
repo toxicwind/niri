@@ -2,3 +2,6 @@
 *.bak
 *.local.kdl
 *.tmp.kdl
+
+# Personal local default (not tracked)
+config.toxic.applemax.kdl

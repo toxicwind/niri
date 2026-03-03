@@ -1,0 +1,14 @@
+layer-rule {
+  match namespace="^dms:toast$"
+  opacity 0.98
+  geometry-corner-radius 16
+
+  shadow {
+    on
+    softness 28
+    spread 4
+    offset x=0 y=10
+    draw-behind-window true
+    color "#00000075"
+  }
+}
