@@ -1,9 +1,6 @@
-# AppleMax For Niri (Forked Readme)
+# AppleMax For Niri
 
 Fork-facing entrypoint for the AppleMax profile pack.
-
-Original long-form readme preserved here:
-- [README.md.orig](./README.md.orig)
 
 ## Pull
 ```bash
