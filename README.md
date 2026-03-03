@@ -1,19 +1,17 @@
 # toxicwind/niri
 
-Fork of [YaLTeR/niri](https://github.com/YaLTeR/niri) for experimental profiles, UX polish, and downstream customization.
+Fork of [YaLTeR/niri](https://github.com/YaLTeR/niri) for experimental compositor tracks, profile packs, and UX tuning.
 
 ## Upstream
-- Upstream project: [YaLTeR/niri](https://github.com/YaLTeR/niri)
+- Upstream repo: [YaLTeR/niri](https://github.com/YaLTeR/niri)
 - Upstream docs: [niri-wm.github.io/niri](https://niri-wm.github.io/niri/)
 
 ## Fork Tracks
 - `contrib/applemax-profile/`: AppleMax modular profile pack
   - Entry readme: [contrib/applemax-profile/README.md](./contrib/applemax-profile/README.md)
-  - Original profile readme snapshot: [contrib/applemax-profile/README.md.orig](./contrib/applemax-profile/README.md.orig)
+  - Original readme snapshot: [contrib/applemax-profile/README.md.orig](./contrib/applemax-profile/README.md.orig)
 
-More tracks can be added under `contrib/` without redefining this root README.
-
-## Quick Start (AppleMax Track)
+## Quick Start (AppleMax)
 ```bash
 git clone https://github.com/toxicwind/niri.git
 cd niri/contrib/applemax-profile
@@ -22,7 +20,12 @@ niri validate -c ~/.config/niri/config.kdl
 niri msg action load-config-file
 ```
 
+Routing is opt-in (safe default):
+```bash
+./install.sh --enable-routing
+```
+
 ## Fork Policy
-- Keep upstream Niri as the compositor base.
-- Keep profile packs modular and isolated under `contrib/`.
-- Prefer additive patches over invasive rewrites.
+- Keep upstream Niri as compositor base.
+- Keep each track under `contrib/` and independently installable.
+- Keep defaults safe; optional behavior should be explicit opt-in.

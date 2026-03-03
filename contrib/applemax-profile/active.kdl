@@ -1,4 +1,4 @@
-// APEX active mods — AppleMax profile
+// APEX active mods — AppleMax profile (safe defaults)
 
 include "mods.enabled/10-layout-glass.kdl"
 include "mods.enabled/20-animations-apple.kdl"
@@ -12,5 +12,7 @@ include "mods.enabled/61-layer-waybar-polish.kdl"
 include "mods.enabled/62-backdrop-wallpaper.kdl"
 include "mods.enabled/70-binds-apple.kdl"
 include "mods.enabled/71-named-workspaces.kdl"
-include "mods.enabled/72-window-routing-rules.kdl"
 include "mods.enabled/73-pip-fix.kdl"
+
+// Opt-in only: app routing can move windows to other workspaces.
+// include "mods.enabled/72-window-routing-rules.kdl"

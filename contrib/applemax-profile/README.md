@@ -1,16 +1,26 @@
 # AppleMax For Niri (Forked Readme)
 
-This is the fork-facing entrypoint for the AppleMax profile pack.
+Fork-facing entrypoint for the AppleMax profile pack.
 
-Original readme preserved here:
+Original long-form readme preserved here:
 - [README.md.orig](./README.md.orig)
 
-## Quick Pull
+## Pull
 ```bash
-git clone --branch codex/applemax-profile-pack https://github.com/toxicwind/niri.git
+git clone https://github.com/toxicwind/niri.git
 cd niri/contrib/applemax-profile
+```
+
+## Install (Single Profile: AppleMax)
+```bash
 ./install.sh
 ```
+
+Installer behavior:
+- installs modules to `~/.config/niri/apex/mods.available`
+- enables non-template modules in `~/.config/niri/apex/mods.enabled`
+- writes profile entrypoint to `~/.config/niri/apex/active.kdl`
+- ensures `include "apex/active.kdl"` in `~/.config/niri/config.kdl`
 
 ## Apply
 ```bash
@@ -18,6 +28,10 @@ niri validate -c ~/.config/niri/config.kdl
 niri msg action load-config-file
 ```
 
+## Safety Defaults
+- Routing is opt-in by default. `72-window-routing-rules.kdl` is shipped but disabled unless you pass `--enable-routing`.
+- Backdrop template is shipped as `90-backdrop-wallpaper.template.kdl` for reference only.
+
 ## Notes
 - This pack is downstream and Niri-native; upstream compositor remains [YaLTeR/niri](https://github.com/YaLTeR/niri).
-- Edit routing first if apps open on unexpected workspaces: `mods.available/72-window-routing-rules.kdl`.
+- If windows appear on unexpected workspaces, audit `mods.enabled/72-window-routing-rules.kdl` first.
