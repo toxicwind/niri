@@ -10,28 +10,31 @@ OUT_DIR="${OUT_ROOT}/${TS}"
 REPORT="${OUT_DIR}/report.txt"
 RELOAD=1
 START_ISO="$(date -Is)"
-PROBE_LAUNCHER=0
 
 usage() {
   cat <<USAGE
-Usage: niri-applemax-helper.sh [--no-reload] [--probe-launcher]
+Usage: niri-applemax-helper.sh [--no-reload]
 
 Options:
   --no-reload  Skip 'niri msg action load-config-file'
-  --probe-launcher  Toggle launcher once to capture transient launcher namespace
 USAGE
 }
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --no-reload) RELOAD=0; shift ;;
-    --probe-launcher) PROBE_LAUNCHER=1; shift ;;
     -h|--help) usage; exit 0 ;;
     *) echo "unknown arg: $1" >&2; usage >&2; exit 2 ;;
   esac
 done
 
 mkdir -p "$OUT_DIR"
+
+# Non-interrupting safety: force-close spotlight/launcher before audit.
+if command -v dms >/dev/null 2>&1; then
+  dms ipc spotlight close >/dev/null 2>&1 || true
+  dms ipc launcher close >/dev/null 2>&1 || true
+fi
 
 echo "=== niri-applemax-helper ===" > "$REPORT"
 echo "time: $(date -Is)" >> "$REPORT"
@@ -73,17 +76,6 @@ append "focused output" niri msg -j focused-output
 append "workspaces" niri msg -j workspaces
 append "windows" niri msg -j windows
 append "layers" niri msg -j layers
-if [[ "$PROBE_LAUNCHER" -eq 1 ]]; then
-  append "launcher probe (before)" niri msg -j layers
-  # Best-effort toggle via configured script.
-  niri msg action spawn -- "${HOME}/.config/apex/scripts/apex-launcher" >/dev/null 2>&1 || true
-  sleep 0.35
-  niri msg -j layers > "$OUT_DIR/layers_probe.json" 2>/dev/null || true
-  append "launcher probe (after open)" cat "$OUT_DIR/layers_probe.json"
-  # Toggle back if launcher supports it.
-  niri msg action spawn -- "${HOME}/.config/apex/scripts/apex-launcher" >/dev/null 2>&1 || true
-  sleep 0.20
-fi
 append "journal (since helper start)" journalctl --user -u niri.service --since "$START_ISO" --no-pager
 
 # Save machine-readable dumps too.
