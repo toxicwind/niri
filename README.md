@@ -17,6 +17,14 @@ Fork of [YaLTeR/niri](https://github.com/YaLTeR/niri) focused on downstream prof
 |---|---|---|---|
 | AppleMax Profile Pack | Active | [`contrib/applemax-profile`](./contrib/applemax-profile) | Single-profile modular config, safe defaults, opt-in routing |
 
+## Fork Helpers
+- Live diagnostics helper: [`helpers/niri-applemax-helper.sh`](./helpers/niri-applemax-helper.sh)
+
+Run helper directly from repo:
+```bash
+./helpers/niri-applemax-helper.sh --reload
+```
+
 ## Quick Start
 ```bash
 git clone https://github.com/toxicwind/niri.git

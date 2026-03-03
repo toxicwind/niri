@@ -25,6 +25,12 @@ niri validate -c ~/.config/niri/config.kdl
 niri msg action load-config-file
 ```
 
+## Diagnose (Fork Helper)
+```bash
+cd ~/path/to/niri-fork
+./helpers/niri-applemax-helper.sh --reload
+```
+
 ## Safety Defaults
 - Routing is opt-in by default. `72-window-routing-rules.kdl` is shipped but disabled unless you pass `--enable-routing`.
 - Backdrop template is shipped as `90-backdrop-wallpaper.template.kdl` for reference only.
