@@ -101,10 +101,20 @@ Switch experiment profile:
 ```bash
 ~/.config/apex/scripts/apex-ux-profile stage-deck
 ~/.config/apex/scripts/apex-ux-profile orbital-grid
+~/.config/apex/scripts/apex-ux-profile panorama-matrix
 ~/.config/apex/scripts/apex-ux-profile none
 ```
 
 HyperFilmstrip modules are intentionally removed.
+
+## Max Final Variants
+One command applies full stack (`dms-native-plus` + UX profile + tuned DMS behavior):
+```bash
+~/.config/apex/scripts/apex-max-variant list
+~/.config/apex/scripts/apex-max-variant apply stage-deck
+~/.config/apex/scripts/apex-max-variant apply orbital-grid
+~/.config/apex/scripts/apex-max-variant apply panorama-matrix
+```
 
 Live demo:
 ```bash

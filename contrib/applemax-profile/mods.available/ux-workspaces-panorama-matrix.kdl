@@ -1,0 +1,16 @@
+// PanoramaMatrix: dual-column workspace matrix for two side-by-side monitors.
+workspace "focus-a"
+workspace "focus-b"
+workspace "focus-c"
+
+workspace "aux-a" {
+  open-on-output "DP-2"
+}
+
+workspace "aux-b" {
+  open-on-output "DP-2"
+}
+
+workspace "aux-c" {
+  open-on-output "DP-2"
+}

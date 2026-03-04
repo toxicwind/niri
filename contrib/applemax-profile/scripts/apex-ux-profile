@@ -14,6 +14,7 @@ Profiles:
   none          Disable all UX experiment slots
   stage-deck    Aggressive stage/deck profile
   orbital-grid  Aggressive orbital-grid profile
+  panorama-matrix Aggressive panoramic matrix profile
 EOF
 }
 
@@ -61,6 +62,15 @@ apply_orbital_grid() {
   link_slot "ux-throws-experiment.kdl" "ux-throws-neural.kdl"
 }
 
+apply_panorama_matrix() {
+  link_slot "ux-workspaces-experiment.kdl" "ux-workspaces-panorama-matrix.kdl"
+  link_slot "ux-routing-experiment.kdl" "ux-routing-panorama-matrix.kdl"
+  link_slot "ux-gestures-experiment.kdl" "ux-gestures-panorama-matrix.kdl"
+  link_slot "ux-binds-experiment.kdl" "ux-binds-panorama-matrix.kdl"
+  link_slot "ux-overview-experiment.kdl" "ux-overview-panorama.kdl"
+  link_slot "ux-throws-experiment.kdl" "ux-throws-neural.kdl"
+}
+
 cleanup_hyperfilmstrip() {
   rm -f "${AV_DIR}/74-workspaces-hyperfilmstrip.kdl" \
         "${AV_DIR}/75-routing-hyperfilmstrip.kdl" \
@@ -86,6 +96,9 @@ case "${PROFILE}" in
     ;;
   orbital-grid)
     apply_orbital_grid
+    ;;
+  panorama-matrix)
+    apply_panorama_matrix
     ;;
   *)
     usage >&2

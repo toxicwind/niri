@@ -1,0 +1,24 @@
+window-rule {
+  match app-id=r#"firefox$|^org\.chromium\.Chromium$"#
+  open-on-workspace "focus-a"
+}
+
+window-rule {
+  match app-id=r#"^code$|^codium$|^dev\.zed\.Zed$|^org\.wezfurlong\.wezterm$"#
+  open-on-workspace "focus-b"
+}
+
+window-rule {
+  match app-id=r#"^obsidian$|^org\.gnome\.Evince$"#
+  open-on-workspace "focus-c"
+}
+
+window-rule {
+  match app-id=r#"^org\.telegram\.desktop$|^com\.slack\.Slack$|^discord$|^Element$"#
+  open-on-workspace "aux-a"
+}
+
+window-rule {
+  match app-id=r#"^com\.spotify\.Client$|^spotify$|^mpv$"#
+  open-on-workspace "aux-b"
+}

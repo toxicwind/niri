@@ -1,0 +1,108 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+CFG_HOME="${XDG_CONFIG_HOME:-$HOME/.config}"
+DMS_SETTINGS="${CFG_HOME}/DankMaterialShell/settings.json"
+
+usage() {
+  cat <<'EOF'
+Usage:
+  apex-max-variant list
+  apex-max-variant apply <variant>
+
+Variants:
+  stage-deck
+  orbital-grid
+  panorama-matrix
+EOF
+}
+
+ensure_settings() {
+  mkdir -p "$(dirname "${DMS_SETTINGS}")"
+  [[ -f "${DMS_SETTINGS}" ]] || printf '{}\n' > "${DMS_SETTINGS}"
+}
+
+patch_dms_for_variant() {
+  local variant="$1"
+  ensure_settings
+  local tmp
+  tmp="$(mktemp)"
+  case "${variant}" in
+    stage-deck)
+      jq '
+        .showDock = true
+        | .dockIsolateDisplays = true
+        | .dockGroupByApp = true
+        | .dockSmartAutoHide = true
+        | .dockAutoHide = false
+        | .appsDockEnlargeOnHover = true
+        | .appsDockEnlargePercentage = 145
+        | .workspaceFollowFocus = true
+        | .niriOverviewOverlayEnabled = true
+      ' "${DMS_SETTINGS}" > "${tmp}"
+      ;;
+    orbital-grid)
+      jq '
+        .showDock = true
+        | .dockIsolateDisplays = false
+        | .dockGroupByApp = true
+        | .dockSmartAutoHide = false
+        | .dockAutoHide = false
+        | .appsDockEnlargeOnHover = true
+        | .appsDockEnlargePercentage = 132
+        | .workspaceFollowFocus = false
+        | .niriOverviewOverlayEnabled = true
+      ' "${DMS_SETTINGS}" > "${tmp}"
+      ;;
+    panorama-matrix)
+      jq '
+        .showDock = true
+        | .dockIsolateDisplays = true
+        | .dockGroupByApp = true
+        | .dockSmartAutoHide = true
+        | .dockAutoHide = false
+        | .appsDockEnlargeOnHover = true
+        | .appsDockEnlargePercentage = 150
+        | .dockPosition = 1
+        | .workspaceFollowFocus = true
+        | .niriOverviewOverlayEnabled = true
+      ' "${DMS_SETTINGS}" > "${tmp}"
+      ;;
+    *)
+      rm -f "${tmp}"
+      return 1
+      ;;
+  esac
+  mv "${tmp}" "${DMS_SETTINGS}"
+}
+
+cmd="${1:-}"
+case "${cmd}" in
+  list)
+    printf '%s\n' stage-deck orbital-grid panorama-matrix
+    exit 0
+    ;;
+  apply)
+    variant="${2:-}"
+    [[ -n "${variant}" ]] || {
+      usage >&2
+      exit 2
+    }
+    ;;
+  *)
+    usage >&2
+    exit 2
+    ;;
+esac
+
+"${HOME}/.config/apex/scripts/apex-dms-native-plus" >/dev/null
+"${HOME}/.config/apex/scripts/apex-ux-profile" "${variant}" >/dev/null
+patch_dms_for_variant "${variant}"
+
+if command -v systemctl >/dev/null 2>&1; then
+  if systemctl --user list-unit-files 2>/dev/null | grep -q '^dms\.service'; then
+    systemctl --user restart dms.service >/dev/null 2>&1 || true
+  fi
+fi
+
+printf '[AppleMax] Max variant applied: %s\n' "${variant}"

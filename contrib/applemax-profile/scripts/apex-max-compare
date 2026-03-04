@@ -1,0 +1,57 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+VARIANTS=(stage-deck orbital-grid panorama-matrix)
+
+detect_current_variant() {
+  local link target
+  link="${XDG_CONFIG_HOME:-$HOME/.config}/niri/apex/mods.enabled/ux-workspaces-experiment.kdl"
+  target="$(readlink "${link}" 2>/dev/null || true)"
+  case "${target}" in
+    *stage-deck*) printf 'stage-deck\n' ;;
+    *orbital-grid*) printf 'orbital-grid\n' ;;
+    *panorama-matrix*) printf 'panorama-matrix\n' ;;
+    *) printf 'none\n' ;;
+  esac
+}
+
+confirm() {
+  local text="$1"
+  local title="${2:-AppleMax}"
+  if command -v zenity >/dev/null 2>&1; then
+    zenity --question --title="${title}" --text="${text}" --ok-label="Yes" --cancel-label="No"
+    return $?
+  fi
+  printf '%s [y/N]: ' "${text}"
+  read -r ans
+  [[ "${ans,,}" == "y" || "${ans,,}" == "yes" ]]
+}
+
+info() {
+  local text="$1"
+  local title="${2:-AppleMax}"
+  if command -v zenity >/dev/null 2>&1; then
+    zenity --info --title="${title}" --text="${text}" || true
+  else
+    printf '%s\n' "${text}"
+  fi
+}
+
+orig="$(detect_current_variant)"
+
+for v in "${VARIANTS[@]}"; do
+  "${HOME}/.config/apex/scripts/apex-max-variant" apply "${v}" >/dev/null
+  info "Now testing: ${v}\n\nMove windows, switch monitors, open overview.\nThen answer the next prompt." "AppleMax Compare"
+  if confirm "Keep ${v} and stop comparing?" "AppleMax Compare"; then
+    printf '[AppleMax] Kept variant: %s\n' "${v}"
+    exit 0
+  fi
+done
+
+if [[ "${orig}" != "none" ]]; then
+  "${HOME}/.config/apex/scripts/apex-max-variant" apply "${orig}" >/dev/null || true
+  info "No variant selected. Restored previous variant: ${orig}" "AppleMax Compare"
+else
+  "${HOME}/.config/apex/scripts/apex-ux-profile" none >/dev/null || true
+  info "No variant selected. Restored previous state (no UX experiment profile)." "AppleMax Compare"
+fi

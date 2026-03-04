@@ -1,0 +1,41 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+CFG_HOME="${XDG_CONFIG_HOME:-$HOME/.config}"
+NIRI_DIR="${CFG_HOME}/niri"
+AV_DIR="${NIRI_DIR}/apex/mods.available"
+EN_DIR="${NIRI_DIR}/apex/mods.enabled"
+STAMP="$(date +%Y%m%d-%H%M%S)"
+LEGACY_DIR="${NIRI_DIR}/apex/mods.legacy/${STAMP}"
+
+mkdir -p "${LEGACY_DIR}" "${EN_DIR}"
+
+count=0
+shopt -s nullglob
+for file in "${AV_DIR}"/[0-9][0-9]-*.kdl; do
+  bn="$(basename "${file}")"
+  case "${bn}" in
+    90-backdrop-wallpaper.template.kdl)
+      continue
+      ;;
+  esac
+  mv "${file}" "${LEGACY_DIR}/${bn}"
+  count=$((count + 1))
+done
+
+# Keep HyperFilmstrip hard-deleted.
+rm -f "${LEGACY_DIR}/74-workspaces-hyperfilmstrip.kdl" \
+      "${LEGACY_DIR}/75-routing-hyperfilmstrip.kdl"
+
+# Drop dangling links from enabled set.
+for link in "${EN_DIR}"/*.kdl; do
+  [[ -e "${link}" || -L "${link}" ]] || continue
+  if [[ -L "${link}" && ! -e "${link}" ]]; then
+    rm -f "${link}"
+  fi
+done
+
+niri validate -c "${NIRI_DIR}/config.kdl" >/dev/null
+niri msg action load-config-file >/dev/null 2>&1 || true
+
+printf '[AppleMax] Pruned %d legacy numbered modules to: %s\n' "${count}" "${LEGACY_DIR}"

@@ -1,0 +1,14 @@
+// PanoramaMatrix: deliberate but not slow cross-monitor drag thresholds.
+gestures {
+  dnd-edge-view-scroll {
+    trigger-width 96
+    delay-ms 260
+    max-speed 1750
+  }
+
+  dnd-edge-workspace-switch {
+    trigger-height 106
+    delay-ms 260
+    max-speed 1480
+  }
+}
