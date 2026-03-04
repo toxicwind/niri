@@ -1,0 +1,13 @@
+binds {
+  Mod+Alt+H { focus-monitor-left; }
+  Mod+Alt+L { focus-monitor-right; }
+  Mod+Alt+Shift+H { move-column-to-monitor-left; }
+  Mod+Alt+Shift+L { move-column-to-monitor-right; }
+
+  Mod+Alt+U { focus-workspace-down; }
+  Mod+Alt+I { focus-workspace-up; }
+  Mod+Alt+Shift+U { move-column-to-workspace-down; }
+  Mod+Alt+Shift+I { move-column-to-workspace-up; }
+
+  Mod+Alt+O { toggle-overview; }
+}

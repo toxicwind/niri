@@ -41,6 +41,24 @@ done
 cat > "${MODS_EN}/dms-native-plus.kdl" <<'EOF'
 // Optional dms-native-plus module (disabled by baseline reset).
 EOF
+cat > "${MODS_EN}/ux-workspaces-experiment.kdl" <<'EOF'
+// Optional workspace experiment slot (disabled by baseline reset).
+EOF
+cat > "${MODS_EN}/ux-routing-experiment.kdl" <<'EOF'
+// Optional routing experiment slot (disabled by baseline reset).
+EOF
+cat > "${MODS_EN}/ux-gestures-experiment.kdl" <<'EOF'
+// Optional gestures experiment slot (disabled by baseline reset).
+EOF
+cat > "${MODS_EN}/ux-binds-experiment.kdl" <<'EOF'
+// Optional binds experiment slot (disabled by baseline reset).
+EOF
+cat > "${MODS_EN}/ux-overview-experiment.kdl" <<'EOF'
+// Optional overview experiment slot (disabled by baseline reset).
+EOF
+cat > "${MODS_EN}/ux-throws-experiment.kdl" <<'EOF'
+// Optional monitor throw experiment slot (disabled by baseline reset).
+EOF
 
 # Remove conflicting output authority from runtime.
 sed -i '/^\s*include\s\+"nirilayout\.kdl"\s*$/d' "${CONFIG_FILE}"

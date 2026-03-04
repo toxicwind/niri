@@ -1,0 +1,14 @@
+// Balanced edge behavior for mixed keyboard/mouse monitor navigation.
+gestures {
+  dnd-edge-view-scroll {
+    trigger-width 84
+    delay-ms 220
+    max-speed 1900
+  }
+
+  dnd-edge-workspace-switch {
+    trigger-height 98
+    delay-ms 230
+    max-speed 1600
+  }
+}

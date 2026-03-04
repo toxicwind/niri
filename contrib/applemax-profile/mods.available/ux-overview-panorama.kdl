@@ -1,0 +1,5 @@
+// Panoramic overview framing for dual-monitor spatial continuity.
+overview {
+  zoom 0.19
+  backdrop-color "#07080D"
+}

@@ -124,6 +124,24 @@ done
 cat > "${APEX_DIR}/mods.enabled/dms-native-plus.kdl" <<'EOF'
 // Optional dms-native-plus module (disabled by default).
 EOF
+cat > "${APEX_DIR}/mods.enabled/ux-workspaces-experiment.kdl" <<'EOF'
+// Optional workspace experiment slot.
+EOF
+cat > "${APEX_DIR}/mods.enabled/ux-routing-experiment.kdl" <<'EOF'
+// Optional routing experiment slot.
+EOF
+cat > "${APEX_DIR}/mods.enabled/ux-gestures-experiment.kdl" <<'EOF'
+// Optional gestures experiment slot.
+EOF
+cat > "${APEX_DIR}/mods.enabled/ux-binds-experiment.kdl" <<'EOF'
+// Optional binds experiment slot.
+EOF
+cat > "${APEX_DIR}/mods.enabled/ux-overview-experiment.kdl" <<'EOF'
+// Optional overview experiment slot.
+EOF
+cat > "${APEX_DIR}/mods.enabled/ux-throws-experiment.kdl" <<'EOF'
+// Optional monitor throw experiment slot.
+EOF
 if [[ "$ENABLE_ROUTING" -eq 1 && -f "${APEX_DIR}/mods.available/routing-apps.kdl" ]]; then
   ln -sfn "../mods.available/routing-apps.kdl" "${APEX_DIR}/mods.enabled/routing-apps.kdl"
 fi

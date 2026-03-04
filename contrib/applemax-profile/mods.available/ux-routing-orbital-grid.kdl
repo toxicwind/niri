@@ -1,0 +1,19 @@
+window-rule {
+  match app-id=r#"firefox$|^org\.chromium\.Chromium$"#
+  open-on-workspace "north-main"
+}
+
+window-rule {
+  match app-id=r#"^code$|^codium$|^dev\.zed\.Zed$|^org\.wezfurlong\.wezterm$"#
+  open-on-workspace "center-main"
+}
+
+window-rule {
+  match app-id=r#"^org\.telegram\.desktop$|^com\.slack\.Slack$|^discord$"#
+  open-on-workspace "center-aux"
+}
+
+window-rule {
+  match app-id=r#"^com\.spotify\.Client$|^spotify$|^mpv$"#
+  open-on-workspace "south-aux"
+}

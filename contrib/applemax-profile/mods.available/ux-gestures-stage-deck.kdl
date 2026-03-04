@@ -1,0 +1,14 @@
+// Stage mode: high drag intent threshold for monitor transitions.
+gestures {
+  dnd-edge-view-scroll {
+    trigger-width 116
+    delay-ms 340
+    max-speed 1600
+  }
+
+  dnd-edge-workspace-switch {
+    trigger-height 126
+    delay-ms 340
+    max-speed 1350
+  }
+}

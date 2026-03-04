@@ -13,6 +13,12 @@ include "mods.enabled/binds-apple-primitives.kdl"
 include "mods.enabled/workspaces-named.kdl"
 include "mods.enabled/pip-video-floating.kdl"
 include "mods.enabled/dms-native-plus.kdl"
+include "mods.enabled/ux-workspaces-experiment.kdl"
+include "mods.enabled/ux-routing-experiment.kdl"
+include "mods.enabled/ux-gestures-experiment.kdl"
+include "mods.enabled/ux-binds-experiment.kdl"
+include "mods.enabled/ux-overview-experiment.kdl"
+include "mods.enabled/ux-throws-experiment.kdl"
 
 // Optional by design (can move apps unexpectedly):
 // include "mods.enabled/routing-apps.kdl"

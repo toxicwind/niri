@@ -1,0 +1,16 @@
+// OrbitalGrid: monitor-local stacks with explicit cardinal structure.
+workspace "north-main"
+workspace "center-main"
+workspace "south-main"
+
+workspace "north-aux" {
+  open-on-output "DP-2"
+}
+
+workspace "center-aux" {
+  open-on-output "DP-2"
+}
+
+workspace "south-aux" {
+  open-on-output "DP-2"
+}

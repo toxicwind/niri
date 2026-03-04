@@ -1,0 +1,16 @@
+// Stage + Deck: focused left-stage with persistent right utility deck.
+workspace "stage"
+workspace "deep-work"
+workspace "sandbox"
+
+workspace "deck-comms" {
+  open-on-output "DP-2"
+}
+
+workspace "deck-media" {
+  open-on-output "DP-2"
+}
+
+workspace "deck-ref" {
+  open-on-output "DP-2"
+}

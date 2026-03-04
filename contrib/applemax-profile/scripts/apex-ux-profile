@@ -1,0 +1,99 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+CFG_HOME="${XDG_CONFIG_HOME:-$HOME/.config}"
+NIRI_DIR="${CFG_HOME}/niri"
+EN_DIR="${NIRI_DIR}/apex/mods.enabled"
+AV_DIR="${NIRI_DIR}/apex/mods.available"
+
+usage() {
+  cat <<'EOF'
+Usage: apex-ux-profile <profile>
+
+Profiles:
+  none          Disable all UX experiment slots
+  stage-deck    Aggressive stage/deck profile
+  orbital-grid  Aggressive orbital-grid profile
+EOF
+}
+
+stub_slot() {
+  local slot="$1"
+  cat > "${EN_DIR}/${slot}" <<EOF
+// ${slot} disabled
+EOF
+}
+
+link_slot() {
+  local slot="$1"
+  local src="$2"
+  if [[ ! -f "${AV_DIR}/${src}" ]]; then
+    printf '[AppleMax] missing module: %s\n' "${src}" >&2
+    return 1
+  fi
+  ln -sfn "../mods.available/${src}" "${EN_DIR}/${slot}"
+}
+
+apply_none() {
+  stub_slot "ux-workspaces-experiment.kdl"
+  stub_slot "ux-routing-experiment.kdl"
+  stub_slot "ux-gestures-experiment.kdl"
+  stub_slot "ux-binds-experiment.kdl"
+  stub_slot "ux-overview-experiment.kdl"
+  stub_slot "ux-throws-experiment.kdl"
+}
+
+apply_stage_deck() {
+  link_slot "ux-workspaces-experiment.kdl" "ux-workspaces-stage-deck.kdl"
+  link_slot "ux-routing-experiment.kdl" "ux-routing-stage-deck.kdl"
+  link_slot "ux-gestures-experiment.kdl" "ux-gestures-stage-deck.kdl"
+  link_slot "ux-binds-experiment.kdl" "ux-binds-stage-deck.kdl"
+  link_slot "ux-overview-experiment.kdl" "ux-overview-panorama.kdl"
+  link_slot "ux-throws-experiment.kdl" "ux-throws-neural.kdl"
+}
+
+apply_orbital_grid() {
+  link_slot "ux-workspaces-experiment.kdl" "ux-workspaces-orbital-grid.kdl"
+  link_slot "ux-routing-experiment.kdl" "ux-routing-orbital-grid.kdl"
+  link_slot "ux-gestures-experiment.kdl" "ux-gestures-orbital-grid.kdl"
+  link_slot "ux-binds-experiment.kdl" "ux-binds-orbital-grid.kdl"
+  link_slot "ux-overview-experiment.kdl" "ux-overview-panorama.kdl"
+  link_slot "ux-throws-experiment.kdl" "ux-throws-neural.kdl"
+}
+
+cleanup_hyperfilmstrip() {
+  rm -f "${AV_DIR}/74-workspaces-hyperfilmstrip.kdl" \
+        "${AV_DIR}/75-routing-hyperfilmstrip.kdl" \
+        "${EN_DIR}/74-workspaces-hyperfilmstrip.kdl" \
+        "${EN_DIR}/75-routing-hyperfilmstrip.kdl"
+}
+
+PROFILE="${1:-}"
+if [[ -z "${PROFILE}" ]]; then
+  usage
+  exit 2
+fi
+
+mkdir -p "${EN_DIR}" "${AV_DIR}"
+cleanup_hyperfilmstrip
+
+case "${PROFILE}" in
+  none)
+    apply_none
+    ;;
+  stage-deck)
+    apply_stage_deck
+    ;;
+  orbital-grid)
+    apply_orbital_grid
+    ;;
+  *)
+    usage >&2
+    exit 2
+    ;;
+esac
+
+niri validate -c "${NIRI_DIR}/config.kdl" >/dev/null
+niri msg action load-config-file >/dev/null 2>&1 || true
+
+printf '[AppleMax] UX profile applied: %s\n' "${PROFILE}"

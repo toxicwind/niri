@@ -1,0 +1,19 @@
+window-rule {
+  match app-id=r#"firefox$|^code$|^codium$|^dev\.zed\.Zed$"#
+  open-on-workspace "stage"
+}
+
+window-rule {
+  match app-id=r#"^org\.telegram\.desktop$|^com\.slack\.Slack$|^discord$|^Element$"#
+  open-on-workspace "deck-comms"
+}
+
+window-rule {
+  match app-id=r#"^com\.spotify\.Client$|^spotify$|^mpv$"#
+  open-on-workspace "deck-media"
+}
+
+window-rule {
+  match app-id=r#"^obsidian$|^org\.gnome\.Evince$|^org\.wezfurlong\.wezterm$"#
+  open-on-workspace "deck-ref"
+}

@@ -1,0 +1,12 @@
+// Explicit monitor travel and throws; avoids ambiguous drag-only flow.
+binds {
+  Mod+Alt+H { focus-monitor-left; }
+  Mod+Alt+L { focus-monitor-right; }
+  Mod+Alt+J { focus-monitor-down; }
+  Mod+Alt+K { focus-monitor-up; }
+
+  Mod+Alt+Shift+H { move-column-to-monitor-left; }
+  Mod+Alt+Shift+L { move-column-to-monitor-right; }
+  Mod+Alt+Shift+J { move-column-to-monitor-down; }
+  Mod+Alt+Shift+K { move-column-to-monitor-up; }
+}

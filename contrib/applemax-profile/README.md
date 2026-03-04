@@ -88,6 +88,24 @@ Enable dock-first aesthetic mode:
    [vinceliuice/MacTahoe-gtk-theme](https://github.com/vinceliuice/MacTahoe-gtk-theme)
    via `tweaks.sh -f default` (best effort).
 
+## UX Experiment Slots (Modular)
+Active profile now exposes dedicated experiment slots:
+1. `ux-workspaces-experiment.kdl`
+2. `ux-routing-experiment.kdl`
+3. `ux-gestures-experiment.kdl`
+4. `ux-binds-experiment.kdl`
+5. `ux-overview-experiment.kdl`
+6. `ux-throws-experiment.kdl`
+
+Switch experiment profile:
+```bash
+~/.config/apex/scripts/apex-ux-profile stage-deck
+~/.config/apex/scripts/apex-ux-profile orbital-grid
+~/.config/apex/scripts/apex-ux-profile none
+```
+
+HyperFilmstrip modules are intentionally removed.
+
 Live demo:
 ```bash
 ~/.config/apex/scripts/applemax-live-demo
