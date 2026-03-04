@@ -1,0 +1,13 @@
+[Unit]
+Description=AppleMax niri-session-manager daemon
+PartOf=niri.service
+After=niri.service
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/niri-session-manager
+Restart=on-failure
+RestartSec=2
+
+[Install]
+WantedBy=niri.service

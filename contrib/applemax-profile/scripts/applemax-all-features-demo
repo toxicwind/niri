@@ -1,0 +1,89 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck disable=SC1091
+source "${SCRIPT_DIR}/apex-niri-helpers"
+
+SLEEP_SHORT="${SLEEP_SHORT:-2}"
+SLEEP_MED="${SLEEP_MED:-3}"
+APEX_STEP_MODE="${APEX_STEP_MODE:-0}"
+APPLY_ONLY=0
+KEEP_STATE=0
+
+for arg in "$@"; do
+  case "$arg" in
+    --step) APEX_STEP_MODE=1 ;;
+    --apply-only) APPLY_ONLY=1 ;;
+  esac
+done
+
+MODS_ENABLED_DIR="$(apex_mods_enabled_dir)"
+SNAPSHOT_FILE="$(mktemp)"
+
+cleanup_snapshot() {
+  rm -f "$SNAPSHOT_FILE"
+}
+trap cleanup_snapshot EXIT
+
+snapshot_mods() {
+  find "$MODS_ENABLED_DIR" -maxdepth 1 -type l -name '*.kdl' -printf '%f\n' | sort > "$SNAPSHOT_FILE"
+}
+
+restore_snapshot_mods() {
+  find "$MODS_ENABLED_DIR" -maxdepth 1 -type l -name '*.kdl' -delete
+  while IFS= read -r mod; do
+    [[ -n "$mod" ]] || continue
+    apex_enable_mod "$mod"
+  done < "$SNAPSHOT_FILE"
+  apex_reload_config
+}
+
+if [[ "$APPLY_ONLY" == "1" ]]; then
+  apex_apply_installer_defaults
+  apex_popup_info "AppleMax MAX profile has been applied." "AppleMax"
+  exit 0
+fi
+
+apex_capture_state
+snapshot_mods
+
+mods=()
+while IFS= read -r m; do
+  [[ -n "$m" ]] || continue
+  mods+=("$m")
+done < <(apex_list_mods)
+
+apex_msg "AppleMax full feature tour: module OFF/ON + runtime scenes."
+apex_wait_for_view "$SLEEP_MED"
+
+for mod in "${mods[@]}"; do
+  apex_msg "OFF: ${mod}"
+  apex_disable_mod "$mod"
+  apex_reload_config
+  apex_wait_for_view "$SLEEP_SHORT"
+
+  apex_msg "ON: ${mod}"
+  apex_enable_mod "$mod"
+  apex_reload_config
+  apex_wait_for_view "$SLEEP_SHORT"
+done
+
+apex_msg "Running cinematic runtime tour."
+APEX_STEP_MODE="${APEX_STEP_MODE}" CLEANUP_DEMO_WINDOWS=1 APPLY_POPUP=0 \
+  ~/.config/apex/scripts/applemax-live-demo || true
+apex_wait_for_view "$SLEEP_MED"
+
+if apex_popup_yes_no "Apply AppleMax MAX profile and keep all modules/services enabled?" "AppleMax Apply"; then
+  apex_apply_installer_defaults
+  KEEP_STATE=1
+  apex_popup_info "Applied: full AppleMax profile + helper services." "AppleMax"
+else
+  KEEP_STATE=0
+fi
+
+if [[ "$KEEP_STATE" == "0" ]]; then
+  restore_snapshot_mods
+  apex_restore_state
+  apex_popup_info "Restored your previous AppleMax module state." "AppleMax"
+fi

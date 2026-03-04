@@ -1,0 +1,176 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+APEX_STEP_MODE="${APEX_STEP_MODE:-0}"
+
+apex_msg() {
+  printf '\n[AppleMax] %s\n' "$*"
+}
+
+apex_notify() {
+  if command -v notify-send >/dev/null 2>&1; then
+    notify-send "AppleMax" "$*" || true
+  fi
+}
+
+apex_wait_for_view() {
+  local sec="${1:-2}"
+  if [[ "${APEX_STEP_MODE}" == "1" ]]; then
+    printf '  press Enter for next scene...'
+    read -r _
+    return 0
+  fi
+  while [ "$sec" -gt 0 ]; do
+    printf '  viewing... %ss\r' "$sec"
+    sleep 1
+    sec=$((sec - 1))
+  done
+  printf '                     \r'
+}
+
+apex_popup_yes_no() {
+  local text="$1"
+  local title="${2:-AppleMax}"
+  if command -v zenity >/dev/null 2>&1; then
+    zenity --question --title="$title" --text="$text"
+    return $?
+  fi
+  printf '%s [y/N]: ' "$text"
+  read -r ans
+  [[ "${ans,,}" == "y" || "${ans,,}" == "yes" ]]
+}
+
+apex_popup_info() {
+  local text="$1"
+  local title="${2:-AppleMax}"
+  if command -v zenity >/dev/null 2>&1; then
+    zenity --info --title="$title" --text="$text" || true
+    return 0
+  fi
+  printf '%s\n' "$text"
+}
+
+apex_require_cmds() {
+  local missing=0
+  for c in "$@"; do
+    if ! command -v "$c" >/dev/null 2>&1; then
+      printf 'missing required command: %s\n' "$c" >&2
+      missing=1
+    fi
+  done
+  [[ "$missing" -eq 0 ]]
+}
+
+apex_reload_config() {
+  niri msg action load-config-file >/dev/null 2>&1 || true
+}
+
+apex_run_action() {
+  local desc="$1"
+  shift
+  apex_msg "$desc"
+  apex_notify "$desc"
+  niri msg action "$@" || true
+}
+
+apex_pick_terminal() {
+  for t in alacritty kitty foot; do
+    if command -v "$t" >/dev/null 2>&1; then
+      printf '%s\n' "$t"
+      return 0
+    fi
+  done
+  return 1
+}
+
+apex_spawn_demo_term() {
+  local term="$1"
+  local title="$2"
+  case "$term" in
+    alacritty) alacritty --title "$title" -e bash -lc "printf '\n$title\n'; exec bash" >/dev/null 2>&1 & ;;
+    kitty) kitty --title "$title" bash -lc "printf '\n$title\n'; exec bash" >/dev/null 2>&1 & ;;
+    foot) foot --title "$title" bash -lc "printf '\n$title\n'; exec bash" >/dev/null 2>&1 & ;;
+  esac
+}
+
+apex_get_window_id_by_title() {
+  local title="$1"
+  niri msg -j windows \
+    | jq -r --arg t "$title" '[.[] | select(.title==$t)][-1].id // empty'
+}
+
+apex_get_outputs_sorted() {
+  niri msg -j outputs | jq -r 'to_entries | sort_by(.value.logical.x) | .[].key'
+}
+
+apex_capture_state() {
+  APEX_ORIG_FOCUS_WINDOW_ID="$(niri msg -j focused-window 2>/dev/null | jq -r '.id // empty')"
+  APEX_ORIG_WORKSPACE_REF="$(niri msg -j workspaces 2>/dev/null | jq -r '.[] | select(.is_focused) | if .name != null then .name else (.idx|tostring) end' | head -n1)"
+}
+
+apex_restore_state() {
+  if [[ -n "${APEX_ORIG_WORKSPACE_REF:-}" ]]; then
+    niri msg action focus-workspace "${APEX_ORIG_WORKSPACE_REF}" >/dev/null 2>&1 || true
+  fi
+  if [[ -n "${APEX_ORIG_FOCUS_WINDOW_ID:-}" ]]; then
+    niri msg action focus-window --id "${APEX_ORIG_FOCUS_WINDOW_ID}" >/dev/null 2>&1 || true
+  fi
+}
+
+apex_niri_dir() {
+  printf '%s\n' "${XDG_CONFIG_HOME:-$HOME/.config}/niri"
+}
+
+apex_mods_available_dir() {
+  printf '%s/apex/mods.available\n' "$(apex_niri_dir)"
+}
+
+apex_mods_enabled_dir() {
+  printf '%s/apex/mods.enabled\n' "$(apex_niri_dir)"
+}
+
+apex_list_mods() {
+  find "$(apex_mods_available_dir)" -maxdepth 1 -type f -name '*.kdl' ! -name '*.template.kdl' -printf '%f\n' | sort
+}
+
+apex_enable_mod() {
+  local mod="$1"
+  local avail enabled
+  avail="$(apex_mods_available_dir)"
+  enabled="$(apex_mods_enabled_dir)"
+  ln -sfn "../mods.available/${mod}" "${enabled}/${mod}"
+}
+
+apex_disable_mod() {
+  local mod="$1"
+  rm -f "$(apex_mods_enabled_dir)/${mod}"
+}
+
+apex_enable_all_mods() {
+  while IFS= read -r mod; do
+    [[ -n "$mod" ]] || continue
+    apex_enable_mod "$mod"
+  done < <(apex_list_mods)
+}
+
+apex_apply_installer_defaults() {
+  local repo_installer="${HOME}/.config/niri/apex-niri-toxicwind/contrib/applemax-profile/install.sh"
+  if [[ -x "$repo_installer" ]]; then
+    "$repo_installer" --user "${USER}" --enable-routing >/dev/null 2>&1 || true
+  fi
+
+  systemctl --user daemon-reload >/dev/null 2>&1 || true
+  for svc in \
+    apex-session.service \
+    niri-switch-daemon.service \
+    niri-float-sticky.service \
+    niri-sidebar.service \
+    nirinit.service
+  do
+    systemctl --user enable --now "$svc" >/dev/null 2>&1 || true
+  done
+  systemctl --user disable --now niri-session-manager.service >/dev/null 2>&1 || true
+
+  apex_enable_all_mods
+  apex_reload_config
+}

@@ -16,6 +16,18 @@ Fork of [YaLTeR/niri](https://github.com/YaLTeR/niri) focused on downstream prof
 | Track | Status | Path | Notes |
 |---|---|---|---|
 | AppleMax Profile Pack | Active | [`contrib/applemax-profile`](./contrib/applemax-profile) | Single-profile modular config, safe defaults, opt-in routing |
+| DMS Shell | Active (submodule) | [`contrib/dms`](./contrib/dms) | Pinned shell/tooling source used by DMS-managed Niri overlays and keybinds |
+
+## Submodules
+Initialize submodules after cloning:
+```bash
+git submodule update --init --recursive
+```
+
+Update DMS submodule:
+```bash
+git submodule update --remote contrib/dms
+```
 
 ## Fork Helpers
 - Live diagnostics helper: [`helpers/niri-applemax-helper.sh`](./helpers/niri-applemax-helper.sh)

@@ -1,0 +1,12 @@
+[Unit]
+Description=AppleMax session bootstrap (DMS primary, Waybar fallback)
+PartOf=niri.service
+After=niri.service
+
+[Service]
+Type=oneshot
+ExecStart=%h/.config/apex/scripts/session-up
+RemainAfterExit=yes
+
+[Install]
+WantedBy=niri.service

@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+if command -v niri-switch >/dev/null 2>&1 && [[ "${APEX_SWITCH_NONINTERACTIVE:-0}" != "1" ]]; then
+  exec niri-switch
+fi
+
+# Non-interactive fallback for demos/scripts.
+exec niri msg action focus-window-down-or-top

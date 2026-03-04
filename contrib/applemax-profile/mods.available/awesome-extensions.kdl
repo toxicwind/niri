@@ -1,0 +1,17 @@
+// Optional integrations from awesome-niri ecosystem tools.
+// These binds call wrapper scripts that no-op if tools are missing.
+binds {
+  // Task switching helper (prefers niri-switch when installed).
+  Mod+Alt+Tab { spawn "~/.config/apex/scripts/apex-task-switch-next"; }
+  Mod+Alt+Shift+Tab { spawn "~/.config/apex/scripts/apex-task-switch-prev"; }
+
+  // Sticky floating window toggle (niri-float-sticky).
+  Mod+Shift+S { spawn "~/.config/apex/scripts/apex-toggle-sticky"; }
+
+  // Sidebar controls (niri-sidebar).
+  Mod+Shift+D { spawn "~/.config/apex/scripts/apex-sidebar-toggle-window"; }
+  Mod+Ctrl+Shift+D { spawn "~/.config/apex/scripts/apex-sidebar-toggle-visibility"; }
+
+  // Output layout switcher (nirilayout).
+  Mod+Alt+L { spawn "~/.config/apex/scripts/apex-layout-switcher"; }
+}

@@ -1,0 +1,64 @@
+#!/usr/bin/env bash
+# AppleMax session bootstrap for niri:
+# - DMS is primary shell
+# - Waybar is fallback only
+set -euo pipefail
+
+CFG_HOME="${XDG_CONFIG_HOME:-$HOME/.config}"
+APEX_HOME="${CFG_HOME}/apex"
+FORCE_WAYBAR_FLAG="${APEX_HOME}/flags/force-waybar"
+
+start_waybar_fallback() {
+  systemctl --user stop dms.service >/dev/null 2>&1 || true
+  pkill -x dms >/dev/null 2>&1 || true
+  pkill -f '/usr/share/quickshell/dms/shell.qml' >/dev/null 2>&1 || true
+
+  if systemctl --user list-unit-files 2>/dev/null | grep -q '^waybar\.service'; then
+    systemctl --user start waybar.service >/dev/null 2>&1 || true
+  else
+    pgrep -x waybar >/dev/null 2>&1 || (waybar >/dev/null 2>&1 &)
+  fi
+
+  if [[ -x "${APEX_HOME}/scripts/apex-awesome-up" ]]; then
+    "${APEX_HOME}/scripts/apex-awesome-up" || true
+  fi
+}
+
+start_dms_primary() {
+  # Ensure we never keep both bars alive at the same time.
+  systemctl --user stop waybar.service >/dev/null 2>&1 || true
+  pkill -x waybar >/dev/null 2>&1 || true
+
+  if systemctl --user list-unit-files 2>/dev/null | grep -q '^dms\.service'; then
+    # Hard reset DMS to clear stale overlays/modals and ensure one shell instance.
+    systemctl --user stop dms.service >/dev/null 2>&1 || true
+    pkill -x dms >/dev/null 2>&1 || true
+    pkill -f '/usr/share/quickshell/dms' >/dev/null 2>&1 || true
+    systemctl --user start dms.service >/dev/null 2>&1 || return 1
+  else
+    pkill -x dms >/dev/null 2>&1 || true
+    pkill -f '/usr/share/quickshell/dms' >/dev/null 2>&1 || true
+    pgrep -x dms >/dev/null 2>&1 || (dms run >/dev/null 2>&1 &)
+  fi
+
+  sleep 1
+  pgrep -x dms >/dev/null 2>&1
+}
+
+mkdir -p "${APEX_HOME}/flags"
+
+if [[ -f "${FORCE_WAYBAR_FLAG}" ]]; then
+  start_waybar_fallback
+  exit 0
+fi
+
+if command -v dms >/dev/null 2>&1; then
+  if start_dms_primary; then
+    if [[ -x "${APEX_HOME}/scripts/apex-awesome-up" ]]; then
+      "${APEX_HOME}/scripts/apex-awesome-up" || true
+    fi
+    exit 0
+  fi
+fi
+
+start_waybar_fallback

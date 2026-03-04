@@ -1,0 +1,171 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+if [[ -f "${SCRIPT_DIR}/apex-niri-helpers" ]]; then
+  # shellcheck disable=SC1091
+  source "${SCRIPT_DIR}/apex-niri-helpers"
+fi
+
+NIRI_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/niri"
+CONFIG_FILE="${NIRI_DIR}/config.kdl"
+NIRILAYOUT_LINK="${NIRI_DIR}/nirilayout.kdl"
+LAYOUT_GLOB=("${NIRI_DIR}"/layout_*.kdl)
+BEZEL_GAP="${BEZEL_GAP:-24}"
+NONINTERACTIVE="${APEX_LAYOUT_NONINTERACTIVE:-0}"
+FORCE_PROFILE="${APEX_LAYOUT_FORCE_PROFILE:-}"
+
+if ! command -v nirilayout >/dev/null 2>&1; then
+  exit 0
+fi
+
+has_layouts() {
+  compgen -G "${NIRI_DIR}/layout_*.kdl" >/dev/null
+}
+
+ensure_include_wiring() {
+  if [[ -f "${CONFIG_FILE}" ]] && ! rg -q '^\s*include\s+"nirilayout\.kdl"\s*$' "${CONFIG_FILE}"; then
+    printf '\ninclude "nirilayout.kdl"\n' >> "${CONFIG_FILE}"
+  fi
+}
+
+ensure_link_profile() {
+  local profile="$1"
+  local target="${NIRI_DIR}/layout_${profile}.kdl"
+  if [[ -f "${target}" ]]; then
+    ln -sfn "layout_${profile}.kdl" "${NIRILAYOUT_LINK}"
+    niri msg action load-config-file >/dev/null 2>&1 || true
+    return 0
+  fi
+  return 1
+}
+
+mode_for_output() {
+  local out="$1"
+  niri msg -j outputs | jq -r --arg o "$out" '
+    .[$o] as $d
+    | ($d.modes[$d.current_mode] // ([ $d.modes[] | select(.is_preferred == true) ][0]) // $d.modes[0]) as $m
+    | "\($m.width)x\($m.height)@\(($m.refresh_rate / 1000) | floor)"
+  '
+}
+
+scale_for_output() {
+  local out="$1"
+  niri msg -j outputs | jq -r --arg o "$out" '.[$o].logical.scale'
+}
+
+width_for_output() {
+  local out="$1"
+  niri msg -j outputs | jq -r --arg o "$out" '.[$o].logical.width'
+}
+
+generate_layouts() {
+  local outputs_json
+  outputs_json="$(niri msg -j outputs)"
+  mapfile -t outs < <(jq -r 'to_entries | sort_by(.value.logical.x) | .[].key' <<<"$outputs_json")
+  if [[ "${#outs[@]}" -eq 0 ]]; then
+    return 1
+  fi
+
+  local left="${outs[0]}"
+  local right="${outs[1]:-${outs[0]}}"
+  local left_mode right_mode left_scale right_scale left_w
+  left_mode="$(mode_for_output "$left")"
+  right_mode="$(mode_for_output "$right")"
+  left_scale="$(scale_for_output "$left")"
+  right_scale="$(scale_for_output "$right")"
+  left_w="$(width_for_output "$left")"
+
+  cat > "${NIRI_DIR}/layout_panorama.kdl" <<EOF
+//! name "Panorama (bezel)"
+//! shortcut p
+output "${left}" {
+    //! name "left"
+    mode "${left_mode}"
+    scale ${left_scale}
+    position x=0 y=0
+}
+output "${right}" {
+    //! name "right"
+    mode "${right_mode}"
+    scale ${right_scale}
+    position x=$((left_w + BEZEL_GAP)) y=0
+}
+EOF
+
+  cat > "${NIRI_DIR}/layout_flush.kdl" <<EOF
+//! name "Panorama (flush)"
+//! shortcut f
+output "${left}" {
+    //! name "left"
+    mode "${left_mode}"
+    scale ${left_scale}
+    position x=0 y=0
+}
+output "${right}" {
+    //! name "right"
+    mode "${right_mode}"
+    scale ${right_scale}
+    position x=${left_w} y=0
+}
+EOF
+
+  cat > "${NIRI_DIR}/layout_focus-left.kdl" <<EOF
+//! name "Focus Left"
+//! shortcut l
+output "${left}" {
+    //! name "left"
+    mode "${left_mode}"
+    scale ${left_scale}
+    position x=0 y=0
+}
+output "${right}" {
+    //! name "right"
+    mode "${right_mode}"
+    scale ${right_scale}
+    position x=$((left_w + 80)) y=80
+}
+EOF
+}
+
+if ! has_layouts; then
+  if apex_popup_yes_no "No nirilayout presets found. Generate AppleMax starter layouts now?" "AppleMax Layouts"; then
+    if generate_layouts; then
+      apex_popup_info "Created: layout_panorama.kdl, layout_flush.kdl, layout_focus-left.kdl in ~/.config/niri" "AppleMax Layouts"
+    else
+      apex_popup_info "Could not detect active niri outputs to scaffold layouts." "AppleMax Layouts"
+      exit 1
+    fi
+  else
+    exit 0
+  fi
+fi
+
+ensure_include_wiring
+
+if [[ ! -e "${NIRILAYOUT_LINK}" ]]; then
+  if [[ -f "${NIRI_DIR}/layout_panorama.kdl" ]]; then
+    ln -sfn "layout_panorama.kdl" "${NIRILAYOUT_LINK}"
+  else
+    first_layout="$(find "${NIRI_DIR}" -maxdepth 1 -type f -name 'layout_*.kdl' | sort | head -n1)"
+    if [[ -n "${first_layout}" ]]; then
+      ln -sfn "$(basename "${first_layout}")" "${NIRILAYOUT_LINK}"
+    fi
+  fi
+  niri msg action load-config-file >/dev/null 2>&1 || true
+fi
+
+if [[ -n "${FORCE_PROFILE}" ]]; then
+  ensure_link_profile "${FORCE_PROFILE}" || true
+fi
+
+if [[ "${NONINTERACTIVE}" == "1" ]]; then
+  if [[ -n "${FORCE_PROFILE}" ]]; then
+    ensure_link_profile "${FORCE_PROFILE}" || true
+  else
+    ensure_link_profile "panorama" || true
+  fi
+  exit 0
+fi
+
+exec nirilayout

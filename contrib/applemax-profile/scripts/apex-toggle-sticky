@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+if command -v niri-float-sticky >/dev/null 2>&1; then
+  exec niri-float-sticky -ipc toggle_sticky
+fi
+
+exit 0

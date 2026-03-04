@@ -1,0 +1,73 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+CFG_HOME="${XDG_CONFIG_HOME:-$HOME/.config}"
+NIRI_DIR="${CFG_HOME}/niri"
+APEX_DIR="${NIRI_DIR}/apex"
+MODS_AVAIL="${APEX_DIR}/mods.available"
+MODS_EN="${APEX_DIR}/mods.enabled"
+CONFIG_FILE="${NIRI_DIR}/config.kdl"
+
+echo "[AppleMax] Applying clarity baseline (DMS display + AppleMax visuals)."
+mkdir -p "${CFG_HOME}/apex/flags"
+printf '%s\n' "dms-native" > "${CFG_HOME}/apex/flags/mode"
+
+mkdir -p "${MODS_EN}"
+find "${MODS_EN}" -maxdepth 1 -name '*.kdl' -delete
+
+keep_mods=(
+  layout-staging.kdl
+  animations-springs.kdl
+  overview-mission-control.kdl
+  gestures-edge-navigation.kdl
+  gestures-hot-corners.kdl
+  windows-surface.kdl
+  layers-launcher-glass.kdl
+  layers-system-bar.kdl
+  layers-backdrop-wallpaper.kdl
+  layers-notifications-glass.kdl
+  binds-apple-primitives.kdl
+  workspaces-named.kdl
+  pip-video-floating.kdl
+)
+
+for m in "${keep_mods[@]}"; do
+  if [[ -f "${MODS_AVAIL}/${m}" ]]; then
+    ln -sfn "../mods.available/${m}" "${MODS_EN}/${m}"
+  fi
+done
+
+# Remove conflicting output authority from runtime.
+sed -i '/^\s*include\s\+"nirilayout\.kdl"\s*$/d' "${CONFIG_FILE}"
+
+# Ensure required includes exist exactly once.
+for line in \
+  'include "apex/active.kdl"' \
+  'include "dms/colors.kdl"' \
+  'include "dms/layout.kdl"' \
+  'include "dms/alttab.kdl"' \
+  'include "dms/binds.kdl"' \
+  'include "dms/outputs.kdl"' \
+  'include "dms/cursor.kdl"' \
+  'include "dms/windowrules.kdl"' \
+  'include "dms/wpblur.kdl"'
+do
+  grep -Fqx "${line}" "${CONFIG_FILE}" || printf '%s\n' "${line}" >> "${CONFIG_FILE}"
+done
+
+# DMS-native: disable overlapping helper daemons.
+systemctl --user disable --now niri-switch-daemon.service >/dev/null 2>&1 || true
+systemctl --user disable --now niri-sidebar.service >/dev/null 2>&1 || true
+pkill -f 'niri-switch-daemon' >/dev/null 2>&1 || true
+pkill -f '^niri-sidebar listen$' >/dev/null 2>&1 || true
+pkill -f '/usr/bin/niri-sidebar listen' >/dev/null 2>&1 || true
+
+# Keep these helpers.
+systemctl --user enable --now niri-float-sticky.service >/dev/null 2>&1 || true
+systemctl --user enable --now nirinit.service >/dev/null 2>&1 || true
+systemctl --user enable --now apex-session.service >/dev/null 2>&1 || true
+
+niri validate -c "${CONFIG_FILE}" >/dev/null
+niri msg action load-config-file >/dev/null 2>&1 || true
+
+echo "[AppleMax] Clarity baseline applied."

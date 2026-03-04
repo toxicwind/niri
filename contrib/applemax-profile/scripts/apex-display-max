@@ -1,0 +1,50 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck disable=SC1091
+source "${SCRIPT_DIR}/apex-niri-helpers"
+
+apex_msg "AppleMax display repair: DMS outputs + shell + daemon singleton."
+mkdir -p "${XDG_CONFIG_HOME:-$HOME/.config}/apex/flags"
+printf '%s\n' "dms-native" > "${XDG_CONFIG_HOME:-$HOME/.config}/apex/flags/mode"
+
+# Ensure DMS include block exists in Niri config.
+NIRI_CONFIG="${XDG_CONFIG_HOME:-$HOME/.config}/niri/config.kdl"
+for line in \
+  'include "dms/colors.kdl"' \
+  'include "dms/layout.kdl"' \
+  'include "dms/alttab.kdl"' \
+  'include "dms/binds.kdl"' \
+  'include "dms/outputs.kdl"' \
+  'include "dms/cursor.kdl"' \
+  'include "dms/windowrules.kdl"' \
+  'include "dms/wpblur.kdl"'
+do
+  if ! grep -Fqx "${line}" "${NIRI_CONFIG}" 2>/dev/null; then
+    printf '%s\n' "${line}" >> "${NIRI_CONFIG}"
+  fi
+done
+
+# Keep one shell only.
+systemctl --user stop waybar.service >/dev/null 2>&1 || true
+pkill -x waybar >/dev/null 2>&1 || true
+
+if systemctl --user list-unit-files 2>/dev/null | grep -q '^dms\.service'; then
+  systemctl --user stop dms.service >/dev/null 2>&1 || true
+  pkill -x dms >/dev/null 2>&1 || true
+  pkill -f '/usr/share/quickshell/dms' >/dev/null 2>&1 || true
+  systemctl --user start dms.service >/dev/null 2>&1 || true
+else
+  pkill -x dms >/dev/null 2>&1 || true
+  pkill -f '/usr/share/quickshell/dms' >/dev/null 2>&1 || true
+  dms run >/dev/null 2>&1 &
+fi
+
+# Reassert helper daemons as singletons.
+APEX_AWESOME_MODE="dms-native" "${SCRIPT_DIR}/apex-awesome-up" >/dev/null 2>&1 || true
+
+apex_reload_config
+
+apex_msg "Display repair done. Current geometry:"
+niri msg -j outputs | jq -r 'to_entries[] | "\(.key): x=\(.value.logical.x) y=\(.value.logical.y) \(.value.logical.width)x\(.value.logical.height)"'

@@ -1,0 +1,67 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+CFG_HOME="${XDG_CONFIG_HOME:-$HOME/.config}"
+APEX_HOME="${CFG_HOME}/apex"
+MODE="${APEX_AWESOME_MODE:-}"
+MODE_FILE="${APEX_HOME}/flags/mode"
+
+if [[ -z "$MODE" && -f "$MODE_FILE" ]]; then
+  MODE="$(tr -d '[:space:]' < "$MODE_FILE" 2>/dev/null || true)"
+fi
+if [[ -z "$MODE" ]]; then
+  MODE="dms-native"
+fi
+
+start_if_missing() {
+  local proc_pat="$1"
+  shift
+  if ! pgrep -f "$proc_pat" >/dev/null 2>&1; then
+    "$@" >/dev/null 2>&1 &
+  fi
+}
+
+start_user_service_if_present() {
+  local svc="$1"
+  if systemctl --user list-unit-files 2>/dev/null | grep -q "^${svc}$"; then
+    systemctl --user start "$svc" >/dev/null 2>&1 || true
+    return 0
+  fi
+  return 1
+}
+
+start_singleton_service_or_process() {
+  local svc="$1"
+  local proc_pat="$2"
+  shift 2
+
+  if systemctl --user list-unit-files 2>/dev/null | grep -q "^${svc}$"; then
+    systemctl --user stop "$svc" >/dev/null 2>&1 || true
+    pkill -f "$proc_pat" >/dev/null 2>&1 || true
+    systemctl --user start "$svc" >/dev/null 2>&1 || true
+    return 0
+  fi
+
+  if [[ "$#" -gt 0 ]]; then
+    start_if_missing "$proc_pat" "$@"
+  fi
+}
+
+# DMS-native mode avoids overlapping switch/sidebar daemons.
+if [[ "$MODE" == "dms-native" ]]; then
+  systemctl --user stop niri-switch-daemon.service >/dev/null 2>&1 || true
+  systemctl --user stop niri-sidebar.service >/dev/null 2>&1 || true
+  pkill -f 'niri-switch-daemon' >/dev/null 2>&1 || true
+  pkill -f 'niri-sidebar.*listen' >/dev/null 2>&1 || true
+else
+  start_singleton_service_or_process "niri-switch-daemon.service" "niri-switch-daemon" niri-switch-daemon
+  start_singleton_service_or_process "niri-sidebar.service" "niri-sidebar.*listen" niri-sidebar listen
+fi
+start_singleton_service_or_process "niri-float-sticky.service" "niri-float-sticky" niri-float-sticky
+
+# Session restore backends (prefer nirinit when both are installed).
+if systemctl --user list-unit-files 2>/dev/null | grep -q '^nirinit\.service'; then
+  systemctl --user start nirinit.service >/dev/null 2>&1 || true
+elif systemctl --user list-unit-files 2>/dev/null | grep -q '^niri-session-manager\.service'; then
+  systemctl --user start niri-session-manager.service >/dev/null 2>&1 || true
+fi

@@ -1,0 +1,290 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck disable=SC1091
+source "${SCRIPT_DIR}/apex-niri-helpers"
+
+SLEEP_SHORT="${SLEEP_SHORT:-2}"
+SLEEP_MED="${SLEEP_MED:-4}"
+SLEEP_LONG="${SLEEP_LONG:-6}"
+DEMO_PREFIX="${DEMO_PREFIX:-AMX-DEMO}"
+APEX_STEP_MODE="${APEX_STEP_MODE:-0}"
+CLEANUP_DEMO_WINDOWS="${CLEANUP_DEMO_WINDOWS:-1}"
+APPLY_POPUP="${APPLY_POPUP:-0}"
+KEEP_STATE="${KEEP_STATE:-0}"
+LAYOUT_UI="${LAYOUT_UI:-0}"
+STAGE_REPAIR="${STAGE_REPAIR:-1}"
+MODE_FILE="${XDG_CONFIG_HOME:-$HOME/.config}/apex/flags/mode"
+RUNTIME_MODE="dms-native"
+
+if [[ -f "${MODE_FILE}" ]]; then
+  RUNTIME_MODE="$(tr -d '[:space:]' < "${MODE_FILE}" 2>/dev/null || echo dms-native)"
+fi
+
+for arg in "$@"; do
+  case "$arg" in
+    --step) APEX_STEP_MODE=1 ;;
+    --apply-popup) APPLY_POPUP=1 ;;
+    --no-cleanup) CLEANUP_DEMO_WINDOWS=0 ;;
+    --layout-ui) LAYOUT_UI=1 ;;
+  esac
+done
+
+apex_require_cmds niri jq >/dev/null
+apex_capture_state
+
+if [[ "${STAGE_REPAIR}" == "1" && -x ~/.config/apex/scripts/apex-display-max ]]; then
+  ~/.config/apex/scripts/apex-display-max >/dev/null 2>&1 || true
+fi
+
+ID_A=""
+ID_B=""
+ID_C=""
+ID_D=""
+TMP_WS_A=""
+TMP_WS_B=""
+
+workspace_exists() {
+  local ws_name="$1"
+  niri msg -j workspaces | jq -e --arg n "$ws_name" '.[] | select(.name == $n)' >/dev/null
+}
+
+new_temp_workspace_name() {
+  local base="$1"
+  local candidate=""
+  local i=0
+  while :; do
+    candidate="${base}-${$}-${i}"
+    if ! workspace_exists "$candidate"; then
+      printf '%s\n' "$candidate"
+      return 0
+    fi
+    i=$((i + 1))
+  done
+}
+
+cleanup_demo() {
+  if [[ "${KEEP_STATE}" == "1" ]]; then
+    return 0
+  fi
+
+  # Restore your original context first.
+  apex_restore_state
+
+  if [[ "${CLEANUP_DEMO_WINDOWS}" != "1" ]]; then
+    return 0
+  fi
+
+  for id in "${ID_D}" "${ID_C}" "${ID_B}" "${ID_A}"; do
+    if [[ -n "$id" ]]; then
+      niri msg action focus-window --id "$id" >/dev/null 2>&1 || true
+      niri msg action close-window >/dev/null 2>&1 || true
+    fi
+  done
+
+  for ws in "${TMP_WS_B}" "${TMP_WS_A}"; do
+    if [[ -n "$ws" ]]; then
+      niri msg action focus-workspace "$ws" >/dev/null 2>&1 || true
+      niri msg action unset-workspace-name >/dev/null 2>&1 || true
+    fi
+  done
+
+  apex_restore_state
+}
+trap cleanup_demo EXIT
+
+mapfile -t OUTPUTS < <(apex_get_outputs_sorted)
+# Explicitly honor your physical topology when available: DP-1 (left), DP-2 (right).
+if niri msg -j outputs | jq -e 'has("DP-1") and has("DP-2")' >/dev/null 2>&1; then
+  LEFT_OUT="DP-1"
+  RIGHT_OUT="DP-2"
+else
+  LEFT_OUT="${OUTPUTS[0]:-}"
+  RIGHT_OUT="${OUTPUTS[1]:-${OUTPUTS[0]:-}}"
+fi
+TMP_WS_A="$(new_temp_workspace_name "applemax-demo-a")"
+TMP_WS_B="$(new_temp_workspace_name "applemax-demo-b")"
+
+apex_msg "AppleMax cinematic demo starting."
+apex_notify "AppleMax cinematic demo starting."
+if [[ "${APEX_STEP_MODE}" == "1" ]]; then
+  apex_msg "Step mode enabled."
+fi
+apex_wait_for_view "$SLEEP_MED"
+
+term=""
+if term="$(apex_pick_terminal)"; then
+  TITLE_A="${DEMO_PREFIX}-A"
+  TITLE_B="${DEMO_PREFIX}-B"
+  TITLE_C="${DEMO_PREFIX}-C"
+  TITLE_D="${DEMO_PREFIX}-D"
+
+  apex_msg "Creating staged windows for the scene."
+  apex_run_action "Focus left monitor (${LEFT_OUT})." focus-monitor "${LEFT_OUT}"
+  apex_wait_for_view "$SLEEP_SHORT"
+  apex_run_action "Focus temp workspace A on left monitor." focus-workspace "${TMP_WS_A}"
+  apex_wait_for_view "$SLEEP_SHORT"
+  apex_spawn_demo_term "$term" "$TITLE_A"
+  sleep 1
+  apex_spawn_demo_term "$term" "$TITLE_B"
+  sleep 1
+  apex_spawn_demo_term "$term" "$TITLE_C"
+  sleep 1
+  apex_spawn_demo_term "$term" "$TITLE_D"
+  sleep 2
+
+  ID_A="$(apex_get_window_id_by_title "$TITLE_A")"
+  ID_B="$(apex_get_window_id_by_title "$TITLE_B")"
+  ID_C="$(apex_get_window_id_by_title "$TITLE_C")"
+  ID_D="$(apex_get_window_id_by_title "$TITLE_D")"
+  apex_wait_for_view "$SLEEP_LONG"
+fi
+
+apex_run_action "Opening Mission Control style overview." do-screen-transition
+apex_wait_for_view "$SLEEP_SHORT"
+apex_run_action "Overview open." open-overview
+apex_wait_for_view "$SLEEP_MED"
+apex_run_action "Overview close." close-overview
+apex_wait_for_view "$SLEEP_SHORT"
+
+if [[ -n "$LEFT_OUT" && -n "$RIGHT_OUT" && "$LEFT_OUT" != "$RIGHT_OUT" && -n "$ID_B" ]]; then
+  apex_run_action "Move scene window to ${RIGHT_OUT}." move-window-to-monitor "$RIGHT_OUT" --id "$ID_B"
+  apex_wait_for_view "$SLEEP_MED"
+fi
+
+if [[ -n "$ID_A" && -n "$ID_B" && -n "$LEFT_OUT" && -n "$RIGHT_OUT" ]]; then
+  apex_run_action "Panorama sweep right (focus right-stage window)." do-screen-transition
+  apex_wait_for_view "$SLEEP_SHORT"
+  apex_run_action "Focus right monitor (${RIGHT_OUT})." focus-monitor "${RIGHT_OUT}"
+  apex_wait_for_view "$SLEEP_SHORT"
+  apex_run_action "Focus right-stage window." focus-window --id "$ID_B"
+  apex_wait_for_view "$SLEEP_MED"
+  apex_run_action "Panorama sweep left (focus left-stage window)." do-screen-transition
+  apex_wait_for_view "$SLEEP_SHORT"
+  apex_run_action "Focus left monitor (${LEFT_OUT})." focus-monitor "${LEFT_OUT}"
+  apex_wait_for_view "$SLEEP_SHORT"
+  apex_run_action "Focus left-stage window." focus-window --id "$ID_A"
+  apex_wait_for_view "$SLEEP_MED"
+else
+  apex_run_action "Panorama sweep to right monitor." focus-monitor-right
+  apex_wait_for_view "$SLEEP_MED"
+  apex_run_action "Panorama sweep back left." focus-monitor-left
+  apex_wait_for_view "$SLEEP_MED"
+fi
+
+if [[ -n "$ID_A" ]]; then
+  apex_run_action "Float scene window on." toggle-window-floating --id "$ID_A"
+  apex_wait_for_view "$SLEEP_MED"
+  apex_run_action "Float scene window off." toggle-window-floating --id "$ID_A"
+  apex_wait_for_view "$SLEEP_SHORT"
+fi
+
+if [[ -n "$ID_A" && -n "$ID_B" && -n "$ID_C" ]]; then
+  apex_run_action "Focus scene window C." focus-window --id "$ID_C"
+  apex_wait_for_view "$SLEEP_SHORT"
+  apex_run_action "Move focused window up in column." move-window-up
+  apex_wait_for_view "$SLEEP_SHORT"
+  apex_run_action "Move focused window down in column." move-window-down
+  apex_wait_for_view "$SLEEP_SHORT"
+  apex_run_action "Focus window up." focus-window-up
+  apex_wait_for_view "$SLEEP_SHORT"
+  apex_run_action "Focus window down." focus-window-down
+  apex_wait_for_view "$SLEEP_SHORT"
+  apex_run_action "Consume right window into column." consume-window-into-column
+  apex_wait_for_view "$SLEEP_SHORT"
+  apex_run_action "Expel window from column to right." expel-window-from-column
+  apex_wait_for_view "$SLEEP_SHORT"
+  apex_run_action "Toggle tabbed column mode on." toggle-column-tabbed-display
+  apex_wait_for_view "$SLEEP_SHORT"
+  apex_run_action "Toggle tabbed column mode off." toggle-column-tabbed-display
+  apex_wait_for_view "$SLEEP_SHORT"
+fi
+
+apex_run_action "Switch preset column width." switch-preset-column-width
+apex_wait_for_view "$SLEEP_SHORT"
+apex_run_action "Switch preset column width (back)." switch-preset-column-width-back
+apex_wait_for_view "$SLEEP_SHORT"
+apex_run_action "Center focused column." center-column
+apex_wait_for_view "$SLEEP_SHORT"
+
+if [[ -n "$ID_C" ]]; then
+  apex_run_action "Route a window to temp workspace ${TMP_WS_A}." move-window-to-workspace "${TMP_WS_A}" --window-id "$ID_C" --focus false
+  apex_wait_for_view "$SLEEP_MED"
+fi
+
+if [[ -n "$ID_B" && -n "$RIGHT_OUT" ]]; then
+  apex_run_action "Ensure window B on right monitor ${RIGHT_OUT}." move-window-to-monitor "${RIGHT_OUT}" --id "$ID_B"
+  apex_wait_for_view "$SLEEP_SHORT"
+  apex_run_action "Route second window to temp workspace ${TMP_WS_B}." move-window-to-workspace "${TMP_WS_B}" --window-id "$ID_B" --focus false
+  apex_wait_for_view "$SLEEP_MED"
+fi
+
+apex_run_action "Focus temp workspace A." focus-workspace "${TMP_WS_A}"
+apex_wait_for_view "$SLEEP_SHORT"
+apex_run_action "Focus temp workspace B." focus-workspace "${TMP_WS_B}"
+apex_wait_for_view "$SLEEP_SHORT"
+apex_run_action "Move focused column to workspace down." move-column-to-workspace-down
+apex_wait_for_view "$SLEEP_SHORT"
+apex_run_action "Move focused column to workspace up." move-column-to-workspace-up
+apex_wait_for_view "$SLEEP_SHORT"
+if [[ -n "$RIGHT_OUT" && -n "$LEFT_OUT" && "$RIGHT_OUT" != "$LEFT_OUT" ]]; then
+  apex_run_action "Move focused column to right monitor." move-column-to-monitor "${RIGHT_OUT}"
+  apex_wait_for_view "$SLEEP_SHORT"
+  apex_run_action "Move focused column back to left monitor." move-column-to-monitor "${LEFT_OUT}"
+  apex_wait_for_view "$SLEEP_SHORT"
+fi
+apex_run_action "Return to original workspace context." focus-workspace "${APEX_ORIG_WORKSPACE_REF}"
+apex_wait_for_view "$SLEEP_SHORT"
+
+apex_msg "Task switch scene (non-interactive demo mode)."
+if [[ "${RUNTIME_MODE}" != "dms-native" ]]; then
+  APEX_SWITCH_NONINTERACTIVE=1 ~/.config/apex/scripts/apex-task-switch-next || true
+  apex_wait_for_view "$SLEEP_SHORT"
+  APEX_SWITCH_NONINTERACTIVE=1 ~/.config/apex/scripts/apex-task-switch-next || true
+  apex_wait_for_view "$SLEEP_SHORT"
+  APEX_SWITCH_NONINTERACTIVE=1 ~/.config/apex/scripts/apex-task-switch-prev || true
+  apex_wait_for_view "$SLEEP_SHORT"
+else
+  apex_msg "Task switch scene skipped in dms-native mode."
+  apex_wait_for_view "$SLEEP_SHORT"
+fi
+
+if [[ "${LAYOUT_UI}" == "1" ]]; then
+  apex_msg "Layout scene skipped in DMS clarity mode."
+  apex_wait_for_view "$SLEEP_SHORT"
+fi
+
+apex_msg "Sticky scene: on then off."
+~/.config/apex/scripts/apex-toggle-sticky || true
+apex_wait_for_view "$SLEEP_SHORT"
+~/.config/apex/scripts/apex-toggle-sticky || true
+apex_wait_for_view "$SLEEP_SHORT"
+
+apex_msg "Sidebar scene: window + visibility."
+if [[ "${RUNTIME_MODE}" != "dms-native" ]]; then
+  ~/.config/apex/scripts/apex-sidebar-toggle-window || true
+  apex_wait_for_view "$SLEEP_SHORT"
+  ~/.config/apex/scripts/apex-sidebar-toggle-visibility || true
+  apex_wait_for_view "$SLEEP_SHORT"
+else
+  apex_msg "Sidebar scene skipped in dms-native mode."
+  apex_wait_for_view "$SLEEP_SHORT"
+fi
+
+apex_run_action "Final overview reveal." open-overview
+apex_wait_for_view "$SLEEP_MED"
+apex_run_action "Close and return." close-overview
+apex_wait_for_view "$SLEEP_SHORT"
+
+if [[ "$APPLY_POPUP" == "1" ]]; then
+  if apex_popup_yes_no "Apply AppleMax MAX profile defaults now?" "AppleMax Apply"; then
+    apex_apply_installer_defaults
+    KEEP_STATE=1
+    apex_popup_info "Applied AppleMax defaults (modules + helper services)." "AppleMax Apply"
+  else
+    KEEP_STATE=0
+  fi
+fi
+
+apex_msg "Cinematic demo complete."

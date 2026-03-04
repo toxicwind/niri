@@ -1,0 +1,34 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck disable=SC1091
+source "${SCRIPT_DIR}/apex-niri-helpers"
+
+NIRI_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/niri"
+ENABLED_DIR="${NIRI_DIR}/apex/mods.enabled"
+
+apex_msg "Applying DMS-native mode (remove overlapping integrations)."
+
+# Keep DMS as the display/keybind/alt-tab authority.
+# active.kdl includes awesome-extensions.kdl unconditionally.
+# Replace with an empty stub (not missing) so config validation stays valid.
+rm -f "${ENABLED_DIR}/awesome-extensions.kdl"
+cat > "${ENABLED_DIR}/awesome-extensions.kdl" <<'EOF'
+// DMS-native mode: intentionally empty to avoid duplicate helper binds.
+EOF
+
+# DMS already handles outputs; enforce include and reset shell cleanly.
+~/.config/apex/scripts/apex-display-max >/dev/null 2>&1 || true
+
+# Stop overlapping daemons that DMS already replaces.
+systemctl --user disable --now niri-switch-daemon.service >/dev/null 2>&1 || true
+systemctl --user disable --now niri-sidebar.service >/dev/null 2>&1 || true
+
+# Kill any orphan listeners from previous session-up runs.
+pkill -f '^niri-sidebar listen$' >/dev/null 2>&1 || true
+pkill -f '/usr/bin/niri-sidebar listen' >/dev/null 2>&1 || true
+
+apex_reload_config
+
+apex_msg "DMS-native mode applied."
