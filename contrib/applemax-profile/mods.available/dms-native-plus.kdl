@@ -1,0 +1,81 @@
+// DMS-native-plus: aesthetic overlay pack.
+// Designed to layer on top of the baseline AppleMax modules without adding shell overlap.
+
+animations {
+  slowdown 0.82
+
+  horizontal-view-movement {
+    spring damping-ratio=1.00 stiffness=1350 epsilon=0.00015
+  }
+
+  overview-open-close {
+    spring damping-ratio=0.98 stiffness=1225 epsilon=0.00015
+  }
+
+  workspace-switch {
+    spring damping-ratio=1.02 stiffness=1425 epsilon=0.00015
+  }
+}
+
+overview {
+  zoom 0.24
+  backdrop-color "#06080C"
+}
+
+layout {
+  gaps 10
+
+  focus-ring {
+    width 2
+    active-gradient from="#BBD9FF" to="#E9F2FF" angle=30 relative-to="workspace-view"
+    inactive-color "#252A33"
+  }
+
+  shadow {
+    on
+    softness 52
+    spread 7
+    offset x=0 y=12
+    color "#00000075"
+  }
+}
+
+window-rule {
+  match app-id=r#"^org\.quickshell$"#
+  opacity 0.99
+  geometry-corner-radius 18
+}
+
+layer-rule {
+  match namespace="^dms:bar$"
+  opacity 0.95
+}
+
+layer-rule {
+  match namespace="^dms:modal$"
+  opacity 0.99
+  geometry-corner-radius 20
+
+  shadow {
+    on
+    softness 44
+    spread 6
+    offset x=0 y=12
+    draw-behind-window true
+    color "#0000007F"
+  }
+}
+
+recent-windows {
+  highlight {
+    active-color "#FFFFFF1B"
+    urgent-color "#FF7A8A66"
+    padding 28
+    corner-radius 18
+  }
+
+  previews {
+    max-height 840
+    max-scale 0.68
+  }
+}

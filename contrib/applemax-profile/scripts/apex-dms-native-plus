@@ -1,0 +1,135 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+CFG_HOME="${XDG_CONFIG_HOME:-$HOME/.config}"
+NIRI_DIR="${CFG_HOME}/niri"
+APEX_DIR="${NIRI_DIR}/apex"
+MODS_EN="${APEX_DIR}/mods.enabled"
+MODS_AVAIL="${APEX_DIR}/mods.available"
+APEX_FLAGS="${CFG_HOME}/apex/flags"
+DMS_DIR="${CFG_HOME}/DankMaterialShell"
+DMS_SETTINGS="${DMS_DIR}/settings.json"
+DMS_THEMES="${DMS_DIR}/themes"
+THEME_FILE="${DMS_THEMES}/dms-native-plus.json"
+REPOS_DIR="${HOME}/.local/share/applemax/repos"
+TAHOE_DIR="${REPOS_DIR}/MacTahoe-gtk-theme"
+
+mkdir -p "${APEX_FLAGS}" "${MODS_EN}" "${DMS_THEMES}" "${REPOS_DIR}"
+
+echo "[AppleMax] Applying dms-native-plus (dock-first + tahoe firefox)."
+
+"${HOME}/.config/apex/scripts/apex-clarity-reset" >/dev/null 2>&1 || true
+
+if command -v systemctl >/dev/null 2>&1; then
+  systemctl --user stop dms.service >/dev/null 2>&1 || true
+fi
+
+cat > "${THEME_FILE}" <<'EOF'
+{
+  "dark": {
+    "name": "DMS Native Plus Dark",
+    "primary": "#8AB4FF",
+    "primaryText": "#001433",
+    "primaryContainer": "#234475",
+    "secondary": "#B6D0FF",
+    "surface": "#10131A",
+    "surfaceText": "#EAF0FF",
+    "surfaceVariant": "#171D27",
+    "surfaceVariantText": "#D1DCF4",
+    "surfaceTint": "#8AB4FF",
+    "background": "#090C12",
+    "backgroundText": "#EAF0FF",
+    "outline": "#5E708E",
+    "surfaceContainer": "#121923",
+    "surfaceContainerHigh": "#192332",
+    "surfaceContainerHighest": "#223044",
+    "error": "#FF7D8A",
+    "warning": "#FFD37A",
+    "info": "#8AB4FF",
+    "matugen_type": "scheme-content"
+  },
+  "light": {
+    "name": "DMS Native Plus Light",
+    "primary": "#2A63B8",
+    "primaryText": "#FFFFFF",
+    "primaryContainer": "#BED7FF",
+    "secondary": "#4A5D80",
+    "surface": "#F6F8FC",
+    "surfaceText": "#101722",
+    "surfaceVariant": "#E9EEF7",
+    "surfaceVariantText": "#324661",
+    "surfaceTint": "#2A63B8",
+    "background": "#FFFFFF",
+    "backgroundText": "#0F1725",
+    "outline": "#8093B0",
+    "surfaceContainer": "#F0F4FB",
+    "surfaceContainerHigh": "#E8EEF8",
+    "surfaceContainerHighest": "#DEE8F7",
+    "error": "#B02A37",
+    "warning": "#A56800",
+    "info": "#2A63B8",
+    "matugen_type": "scheme-content"
+  }
+}
+EOF
+
+if [[ ! -f "${DMS_SETTINGS}" ]]; then
+  printf '{}\n' > "${DMS_SETTINGS}"
+fi
+
+tmp_settings="$(mktemp)"
+jq \
+  --arg theme "${THEME_FILE}" \
+  '
+  .currentThemeName = "custom"
+  | .currentThemeCategory = "generic"
+  | .customThemeFile = $theme
+  | .showDock = true
+  | .dockPosition = 1
+  | .dockOpenOnOverview = true
+  | .dockSmartAutoHide = true
+  | .dockAutoHide = false
+  | .dockIsolateDisplays = true
+  | .dockGroupByApp = true
+  | .dockIndicatorStyle = "line"
+  | .dockLauncherEnabled = true
+  | .dockShowOverflowBadge = true
+  | .appsDockEnlargeOnHover = true
+  | .appsDockEnlargePercentage = 140
+  | .appsDockIconSizePercentage = 108
+  | .dockTransparency = 0.88
+  | .barTransparency = 0.92
+  | .niriOverviewOverlayEnabled = true
+  | .workspaceFollowFocus = true
+  ' "${DMS_SETTINGS}" > "${tmp_settings}"
+mv "${tmp_settings}" "${DMS_SETTINGS}"
+
+if [[ ! -d "${TAHOE_DIR}/.git" ]]; then
+  git clone --depth=1 https://github.com/vinceliuice/MacTahoe-gtk-theme.git "${TAHOE_DIR}" >/dev/null 2>&1 || true
+else
+  git -C "${TAHOE_DIR}" pull --ff-only >/dev/null 2>&1 || true
+fi
+
+if [[ -x "${TAHOE_DIR}/tweaks.sh" ]]; then
+  (cd "${TAHOE_DIR}" && ./tweaks.sh -f default >/dev/null 2>&1 || true)
+fi
+
+if command -v systemctl >/dev/null 2>&1; then
+  if systemctl --user list-unit-files 2>/dev/null | grep -q '^dms\.service'; then
+    systemctl --user restart dms.service >/dev/null 2>&1 || true
+  fi
+fi
+
+printf '%s\n' "dms-native-plus" > "${APEX_FLAGS}/mode"
+if [[ -f "${MODS_AVAIL}/dms-native-plus.kdl" ]]; then
+  ln -sfn "../mods.available/dms-native-plus.kdl" "${MODS_EN}/dms-native-plus.kdl"
+fi
+"${HOME}/.config/apex/scripts/apex-awesome-up" >/dev/null 2>&1 || true
+
+niri validate -c "${NIRI_DIR}/config.kdl" >/dev/null
+niri msg action load-config-file >/dev/null 2>&1 || true
+
+echo "[AppleMax] dms-native-plus active."
+echo "  Dock: enabled + intelligent autohide + per-monitor isolation"
+echo "  Theme: ${THEME_FILE}"
+echo "  Firefox: MacTahoe tweaks.sh -f default (best effort)"

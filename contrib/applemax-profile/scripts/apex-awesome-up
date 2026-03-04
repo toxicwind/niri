@@ -47,8 +47,8 @@ start_singleton_service_or_process() {
   fi
 }
 
-# DMS-native mode avoids overlapping switch/sidebar daemons.
-if [[ "$MODE" == "dms-native" ]]; then
+# DMS-native family modes avoid overlapping switch/sidebar daemons.
+if [[ "$MODE" == dms-native* ]]; then
   systemctl --user stop niri-switch-daemon.service >/dev/null 2>&1 || true
   systemctl --user stop niri-sidebar.service >/dev/null 2>&1 || true
   pkill -f 'niri-switch-daemon' >/dev/null 2>&1 || true

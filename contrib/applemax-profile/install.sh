@@ -119,6 +119,11 @@ do
     ln -sfn "../mods.available/${bn}" "${APEX_DIR}/mods.enabled/${bn}"
   fi
 done
+
+# Keep optional "plus" include parse-safe by default.
+cat > "${APEX_DIR}/mods.enabled/dms-native-plus.kdl" <<'EOF'
+// Optional dms-native-plus module (disabled by default).
+EOF
 if [[ "$ENABLE_ROUTING" -eq 1 && -f "${APEX_DIR}/mods.available/routing-apps.kdl" ]]; then
   ln -sfn "../mods.available/routing-apps.kdl" "${APEX_DIR}/mods.enabled/routing-apps.kdl"
 fi

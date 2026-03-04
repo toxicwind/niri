@@ -7,7 +7,16 @@ source "${SCRIPT_DIR}/apex-niri-helpers"
 
 apex_msg "AppleMax display repair: DMS outputs + shell + daemon singleton."
 mkdir -p "${XDG_CONFIG_HOME:-$HOME/.config}/apex/flags"
-printf '%s\n' "dms-native" > "${XDG_CONFIG_HOME:-$HOME/.config}/apex/flags/mode"
+MODE_FILE="${XDG_CONFIG_HOME:-$HOME/.config}/apex/flags/mode"
+MODE_CURRENT=""
+if [[ -f "${MODE_FILE}" ]]; then
+  MODE_CURRENT="$(tr -d '[:space:]' < "${MODE_FILE}" 2>/dev/null || true)"
+fi
+if [[ "${MODE_CURRENT}" == dms-native-plus ]]; then
+  printf '%s\n' "dms-native-plus" > "${MODE_FILE}"
+else
+  printf '%s\n' "dms-native" > "${MODE_FILE}"
+fi
 
 # Ensure DMS include block exists in Niri config.
 NIRI_CONFIG="${XDG_CONFIG_HOME:-$HOME/.config}/niri/config.kdl"
@@ -42,7 +51,11 @@ else
 fi
 
 # Reassert helper daemons as singletons.
-APEX_AWESOME_MODE="dms-native" "${SCRIPT_DIR}/apex-awesome-up" >/dev/null 2>&1 || true
+if [[ "${MODE_CURRENT}" == dms-native-plus ]]; then
+  APEX_AWESOME_MODE="dms-native-plus" "${SCRIPT_DIR}/apex-awesome-up" >/dev/null 2>&1 || true
+else
+  APEX_AWESOME_MODE="dms-native" "${SCRIPT_DIR}/apex-awesome-up" >/dev/null 2>&1 || true
+fi
 
 apex_reload_config
 

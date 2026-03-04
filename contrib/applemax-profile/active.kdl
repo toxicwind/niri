@@ -12,6 +12,7 @@ include "mods.enabled/layers-notifications-glass.kdl"
 include "mods.enabled/binds-apple-primitives.kdl"
 include "mods.enabled/workspaces-named.kdl"
 include "mods.enabled/pip-video-floating.kdl"
+include "mods.enabled/dms-native-plus.kdl"
 
 // Optional by design (can move apps unexpectedly):
 // include "mods.enabled/routing-apps.kdl"

@@ -75,6 +75,19 @@ Startup helper:
 - In `dms-native` mode it keeps `niri-switch-daemon` and `niri-sidebar` stopped.
 - It starts `niri-float-sticky` and `nirinit` as available.
 
+Enable dock-first aesthetic mode:
+```bash
+~/.config/apex/scripts/apex-dms-native-plus
+```
+`dms-native-plus` does all of:
+1. Keeps DMS-native overlap policy (no switch/sidebar daemons).
+2. Enables AppleMax plus overlay (`mods.available/dms-native-plus.kdl`).
+3. Forces DMS dock-first UX (dock on, intelligent auto-hide, per-monitor isolation).
+4. Applies a custom glass-blue DMS theme.
+5. Installs/updates Firefox Tahoe tweaks from:
+   [vinceliuice/MacTahoe-gtk-theme](https://github.com/vinceliuice/MacTahoe-gtk-theme)
+   via `tweaks.sh -f default` (best effort).
+
 Live demo:
 ```bash
 ~/.config/apex/scripts/applemax-live-demo

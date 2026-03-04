@@ -37,6 +37,11 @@ for m in "${keep_mods[@]}"; do
   fi
 done
 
+# Keep optional plus include parse-safe while baseline is active.
+cat > "${MODS_EN}/dms-native-plus.kdl" <<'EOF'
+// Optional dms-native-plus module (disabled by baseline reset).
+EOF
+
 # Remove conflicting output authority from runtime.
 sed -i '/^\s*include\s\+"nirilayout\.kdl"\s*$/d' "${CONFIG_FILE}"
 
