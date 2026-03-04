@@ -1,0 +1,206 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck disable=SC1091
+source "${SCRIPT_DIR}/apex-niri-helpers"
+
+VARIANTS=(stage-deck orbital-grid panorama-matrix)
+SLEEP_SCENE="${SLEEP_SCENE:-2}"
+
+LEFT_OUT=""
+RIGHT_OUT=""
+LEFT_X=0
+LEFT_Y=0
+LEFT_W=2560
+LEFT_H=1440
+RIGHT_X=2560
+RIGHT_Y=0
+RIGHT_W=2560
+RIGHT_H=1440
+
+started_gromit=0
+started_showkeys=0
+showkeys_pid=""
+keep_variant=""
+last_variant=""
+
+sleep_short() { sleep "${1:-$SLEEP_SCENE}"; }
+
+toast() {
+  local msg="$1"
+  dms ipc call toast info "${msg}" >/dev/null 2>&1 || true
+  apex_msg "${msg}"
+}
+
+detect_current_variant() {
+  local link target
+  link="${XDG_CONFIG_HOME:-$HOME/.config}/niri/apex/mods.enabled/ux-workspaces-experiment.kdl"
+  target="$(readlink "${link}" 2>/dev/null || true)"
+  case "${target}" in
+    *stage-deck*) printf 'stage-deck\n' ;;
+    *orbital-grid*) printf 'orbital-grid\n' ;;
+    *panorama-matrix*) printf 'panorama-matrix\n' ;;
+    *) printf 'none\n' ;;
+  esac
+}
+
+detect_outputs() {
+  local out_json
+  out_json="$(niri msg -j outputs)"
+  LEFT_OUT="$(jq -r 'to_entries | sort_by(.value.logical.x) | .[0].key // empty' <<<"${out_json}")"
+  RIGHT_OUT="$(jq -r 'to_entries | sort_by(.value.logical.x) | .[1].key // .[0].key // empty' <<<"${out_json}")"
+  [[ -n "${LEFT_OUT}" ]] || LEFT_OUT="DP-1"
+  [[ -n "${RIGHT_OUT}" ]] || RIGHT_OUT="${LEFT_OUT}"
+
+  LEFT_X="$(jq -r --arg o "${LEFT_OUT}" '.[$o].logical.x // 0' <<<"${out_json}")"
+  LEFT_Y="$(jq -r --arg o "${LEFT_OUT}" '.[$o].logical.y // 0' <<<"${out_json}")"
+  LEFT_W="$(jq -r --arg o "${LEFT_OUT}" '.[$o].logical.width // 2560' <<<"${out_json}")"
+  LEFT_H="$(jq -r --arg o "${LEFT_OUT}" '.[$o].logical.height // 1440' <<<"${out_json}")"
+  RIGHT_X="$(jq -r --arg o "${RIGHT_OUT}" '.[$o].logical.x // 0' <<<"${out_json}")"
+  RIGHT_Y="$(jq -r --arg o "${RIGHT_OUT}" '.[$o].logical.y // 0' <<<"${out_json}")"
+  RIGHT_W="$(jq -r --arg o "${RIGHT_OUT}" '.[$o].logical.width // 2560' <<<"${out_json}")"
+  RIGHT_H="$(jq -r --arg o "${RIGHT_OUT}" '.[$o].logical.height // 1440' <<<"${out_json}")"
+}
+
+start_showkeys() {
+  command -v showmethekey-gtk >/dev/null 2>&1 || return 0
+  pgrep -f 'showmethekey-gtk' >/dev/null 2>&1 && return 0
+  apex_gui_exec showmethekey-gtk --keys-win --no-app-win --no-clickable >/tmp/apex-showmethekey.log 2>&1 &
+  showkeys_pid="$!"
+  started_showkeys=1
+}
+
+start_gromit() {
+  command -v gromit-mpx >/dev/null 2>&1 || return 0
+  if pgrep -x gromit-mpx >/dev/null 2>&1; then
+    apex_gui_exec gromit-mpx --clear >/dev/null 2>&1 || true
+    return 0
+  fi
+  apex_gui_exec gromit-mpx --key none --undo-key none --opacity 0.90 >/tmp/apex-gromit.log 2>&1 &
+  sleep 1
+  started_gromit=1
+}
+
+cleanup() {
+  apex_gui_exec gromit-mpx --clear >/dev/null 2>&1 || true
+  if [[ "${started_gromit}" == "1" ]]; then
+    apex_gui_exec gromit-mpx --quit >/dev/null 2>&1 || true
+  fi
+  if [[ "${started_showkeys}" == "1" && -n "${showkeys_pid}" ]]; then
+    kill "${showkeys_pid}" >/dev/null 2>&1 || true
+  fi
+  apex_restore_state
+}
+trap cleanup EXIT
+
+draw_line() {
+  local x1="$1" y1="$2" x2="$3" y2="$4" color="$5" thick="$6"
+  apex_gui_exec gromit-mpx --line "$x1" "$y1" "$x2" "$y2" "$color" "$thick" >/dev/null 2>&1 || true
+}
+
+draw_arrow_lr() {
+  local sx="$1" ex="$2" y="$3" color="$4" thick="$5"
+  draw_line "$sx" "$y" "$ex" "$y" "$color" "$thick"
+  draw_line "$ex" "$y" "$((ex - 36))" "$((y - 22))" "$color" "$thick"
+  draw_line "$ex" "$y" "$((ex - 36))" "$((y + 22))" "$color" "$thick"
+}
+
+draw_arrow_rl() {
+  local sx="$1" ex="$2" y="$3" color="$4" thick="$5"
+  draw_line "$sx" "$y" "$ex" "$y" "$color" "$thick"
+  draw_line "$ex" "$y" "$((ex + 36))" "$((y - 22))" "$color" "$thick"
+  draw_line "$ex" "$y" "$((ex + 36))" "$((y + 22))" "$color" "$thick"
+}
+
+draw_monitor_callouts() {
+  local mid_y bezel_x left_center_x right_center_x top_y
+  mid_y="$((LEFT_Y + LEFT_H / 2))"
+  bezel_x="$((LEFT_X + LEFT_W))"
+  left_center_x="$((LEFT_X + LEFT_W / 2))"
+  right_center_x="$((RIGHT_X + RIGHT_W / 2))"
+  top_y="$((LEFT_Y + 130))"
+
+  apex_gui_exec gromit-mpx --clear >/dev/null 2>&1 || true
+  draw_arrow_lr "$((left_center_x - 240))" "$((bezel_x + 180))" "$mid_y" "#7EC8FF" 8
+  draw_arrow_rl "$((right_center_x + 240))" "$((bezel_x - 180))" "$((mid_y + 90))" "#FFB07E" 8
+  draw_line "$bezel_x" "$((mid_y - 180))" "$bezel_x" "$((mid_y + 180))" "#E6E6E6" 5
+  draw_arrow_lr "$((LEFT_X + 140))" "$((LEFT_X + 460))" "$top_y" "#A7F3D0" 7
+  draw_arrow_rl "$((RIGHT_X + RIGHT_W - 140))" "$((RIGHT_X + RIGHT_W - 460))" "$top_y" "#FDE68A" 7
+}
+
+focus_workspace_side() {
+  local ws="$1" side="$2"
+  niri msg action focus-workspace "${ws}" >/dev/null 2>&1 || true
+  sleep_short 1
+  if [[ "${side}" == "left" ]]; then
+    niri msg action focus-monitor "${LEFT_OUT}" >/dev/null 2>&1 || true
+    draw_arrow_lr "$((LEFT_X + 220))" "$((LEFT_X + LEFT_W - 220))" "$((LEFT_Y + LEFT_H / 2))" "#8BE9FD" 8
+  else
+    niri msg action focus-monitor "${RIGHT_OUT}" >/dev/null 2>&1 || true
+    draw_arrow_rl "$((RIGHT_X + RIGHT_W - 220))" "$((RIGHT_X + 220))" "$((RIGHT_Y + RIGHT_H / 2))" "#FFD6A5" 8
+  fi
+  toast "Spotlight: ${ws} on ${side} side."
+  sleep_short 2
+}
+
+show_variant() {
+  local variant="$1"
+  local left_a left_b right_a right_b
+  case "${variant}" in
+    stage-deck)
+      left_a="stage"; left_b="deep-work"; right_a="deck-comms"; right_b="deck-media"
+      ;;
+    orbital-grid)
+      left_a="north-main"; left_b="center-main"; right_a="center-aux"; right_b="south-aux"
+      ;;
+    panorama-matrix)
+      left_a="focus-a"; left_b="focus-b"; right_a="aux-a"; right_b="aux-b"
+      ;;
+  esac
+
+  "${HOME}/.config/apex/scripts/apex-max-variant" apply "${variant}" >/dev/null
+  last_variant="${variant}"
+  draw_monitor_callouts
+  apex_popup_info "Variant: ${variant}\n\nBlue arrows: across-bezel motion.\nGreen/yellow arrows: left/right zones.\n\nKey overlay is enabled while demo runs." "AppleMax Live Spotlight"
+  toast "Running ${variant} with live arrows."
+
+  focus_workspace_side "${left_a}" left
+  focus_workspace_side "${left_b}" left
+  focus_workspace_side "${right_a}" right
+  focus_workspace_side "${right_b}" right
+
+  toast "Overview continuity check."
+  niri msg action toggle-overview >/dev/null 2>&1 || true
+  sleep_short 2
+  niri msg action toggle-overview >/dev/null 2>&1 || true
+  draw_monitor_callouts
+}
+
+ask_keep_variant() {
+  local variant="$1"
+  apex_popup_yes_no "Keep ${variant} as your active AppleMax mode?" "AppleMax Keep Variant"
+}
+
+apex_require_cmds niri jq >/dev/null
+apex_capture_state
+detect_outputs
+start_showkeys
+start_gromit
+
+toast "Live spotlight demo starting for ${LEFT_OUT} (left) and ${RIGHT_OUT} (right)."
+
+for v in "${VARIANTS[@]}"; do
+  show_variant "${v}"
+  if ask_keep_variant "${v}"; then
+    keep_variant="${v}"
+    break
+  fi
+done
+
+if [[ -z "${keep_variant}" ]]; then
+  keep_variant="${last_variant:-$(detect_current_variant)}"
+fi
+
+toast "Kept variant: ${keep_variant}."
+apex_popup_info "Active variant kept: ${keep_variant}\n\nUse ~/.config/apex/scripts/apex-max-show again anytime." "AppleMax Done"

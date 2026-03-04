@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+CMD="${HOME}/.config/apex/scripts/apex-max-compare"
+
+if command -v alacritty >/dev/null 2>&1; then
+  exec alacritty --title "AppleMax Live Compare" -e bash -lc "${CMD}; echo; echo 'Done. Press Enter.'; read -r _"
+fi
+if command -v kitty >/dev/null 2>&1; then
+  exec kitty --title "AppleMax Live Compare" bash -lc "${CMD}; echo; echo 'Done. Press Enter.'; read -r _"
+fi
+if command -v foot >/dev/null 2>&1; then
+  exec foot --title "AppleMax Live Compare" bash -lc "${CMD}; echo; echo 'Done. Press Enter.'; read -r _"
+fi
+
+echo "No terminal launcher found (alacritty/kitty/foot)."
+echo "Run directly: ${CMD}"

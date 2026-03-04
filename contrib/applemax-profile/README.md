@@ -116,6 +116,21 @@ One command applies full stack (`dms-native-plus` + UX profile + tuned DMS behav
 ~/.config/apex/scripts/apex-max-variant apply panorama-matrix
 ```
 
+Guided live compare (GUI spotlight with arrows + key overlay):
+```bash
+~/.config/apex/scripts/apex-max-compare-live
+```
+
+Direct launcher (same engine):
+```bash
+~/.config/apex/scripts/apex-max-show
+```
+
+For best live callouts, install:
+```bash
+paru -S --needed gromit-mpx showmethekey
+```
+
 Live demo:
 ```bash
 ~/.config/apex/scripts/applemax-live-demo

@@ -3,6 +3,24 @@ set -euo pipefail
 
 APEX_STEP_MODE="${APEX_STEP_MODE:-0}"
 
+apex_load_gui_env_from_dms() {
+  local pid envline
+  pid="$(pgrep -o -f '/usr/bin/dms run --session' 2>/dev/null || true)"
+  [[ -n "${pid}" && -r "/proc/${pid}/environ" ]] || return 0
+  while IFS= read -r envline; do
+    case "${envline}" in
+      DISPLAY=*|WAYLAND_DISPLAY=*|XDG_RUNTIME_DIR=*|DBUS_SESSION_BUS_ADDRESS=*|XDG_SESSION_TYPE=*)
+        export "${envline}"
+        ;;
+    esac
+  done < <(tr '\0' '\n' <"/proc/${pid}/environ")
+}
+
+apex_gui_exec() {
+  apex_load_gui_env_from_dms
+  "$@"
+}
+
 apex_msg() {
   printf '\n[AppleMax] %s\n' "$*"
 }
@@ -31,8 +49,16 @@ apex_wait_for_view() {
 apex_popup_yes_no() {
   local text="$1"
   local title="${2:-AppleMax}"
+  if command -v yad >/dev/null 2>&1; then
+    apex_gui_exec yad --question --on-top --center \
+      --title="$title" \
+      --text="$text" \
+      --button="Yes:0" \
+      --button="No:1" >/dev/null 2>&1
+    return $?
+  fi
   if command -v zenity >/dev/null 2>&1; then
-    zenity --question --title="$title" --text="$text"
+    apex_gui_exec zenity --question --modal --title="$title" --text="$text"
     return $?
   fi
   printf '%s [y/N]: ' "$text"
@@ -43,8 +69,15 @@ apex_popup_yes_no() {
 apex_popup_info() {
   local text="$1"
   local title="${2:-AppleMax}"
+  if command -v yad >/dev/null 2>&1; then
+    apex_gui_exec yad --info --on-top --center \
+      --title="$title" \
+      --text="$text" \
+      --button=OK >/dev/null 2>&1 || true
+    return 0
+  fi
   if command -v zenity >/dev/null 2>&1; then
-    zenity --info --title="$title" --text="$text" || true
+    apex_gui_exec zenity --info --modal --title="$title" --text="$text" || true
     return 0
   fi
   printf '%s\n' "$text"
