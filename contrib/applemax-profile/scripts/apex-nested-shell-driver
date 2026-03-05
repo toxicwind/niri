@@ -1,0 +1,62 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+SLEEP_SCENE="${SLEEP_SCENE:-2}"
+VARIANTS=(stage-deck orbital-grid panorama-matrix)
+
+sleep_short() { sleep "${1:-$SLEEP_SCENE}"; }
+
+msg() { printf '[NestedDemo] %s\n' "$*"; }
+
+pick_term() {
+  for t in alacritty kitty foot; do
+    command -v "$t" >/dev/null 2>&1 && { echo "$t"; return 0; }
+  done
+  return 1
+}
+
+spawn_term() {
+  local term="$1" title="$2"
+  case "$term" in
+    alacritty) alacritty --title "$title" -e bash -lc "printf '\n$title\n'; exec bash" >/dev/null 2>&1 & ;;
+    kitty) kitty --title "$title" bash -lc "printf '\n$title\n'; exec bash" >/dev/null 2>&1 & ;;
+    foot) foot --title "$title" bash -lc "printf '\n$title\n'; exec bash" >/dev/null 2>&1 & ;;
+  esac
+}
+
+spawn_scene() {
+  local variant="$1" term
+  term="$(pick_term || true)"
+  [[ -n "$term" ]] || return 0
+  spawn_term "$term" "NESTED-${variant}-A"
+  sleep 0.3
+  spawn_term "$term" "NESTED-${variant}-B"
+  sleep 0.3
+  spawn_term "$term" "NESTED-${variant}-C"
+  sleep 0.3
+  spawn_term "$term" "NESTED-${variant}-D"
+  sleep 1
+}
+
+run_variant() {
+  local variant="$1"
+  msg "apply ${variant}"
+  ~/.config/apex/scripts/apex-max-variant apply "$variant" >/dev/null 2>&1 || true
+  spawn_scene "$variant"
+
+  # single-output nested niri: we still demonstrate workspace choreography
+  niri msg action focus-workspace "${variant}-1" >/dev/null 2>&1 || true
+  sleep_short 1
+  niri msg action focus-workspace "${variant}-2" >/dev/null 2>&1 || true
+  sleep_short 1
+  niri msg action toggle-overview >/dev/null 2>&1 || true
+  sleep_short 2
+  niri msg action toggle-overview >/dev/null 2>&1 || true
+  sleep_short 1
+}
+
+msg "Nested niri AppleMax demo started"
+for v in "${VARIANTS[@]}"; do
+  run_variant "$v"
+done
+msg "Nested demo finished; keep this nested shell open for manual testing."

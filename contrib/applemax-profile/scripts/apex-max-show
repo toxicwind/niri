@@ -7,6 +7,9 @@ source "${SCRIPT_DIR}/apex-niri-helpers"
 
 VARIANTS=(stage-deck orbital-grid panorama-matrix)
 SLEEP_SCENE="${SLEEP_SCENE:-2}"
+WALL_MODE=0
+SPAWN_SCENE=1
+CANVAS_RATIO="${CANVAS_RATIO:-50/50}"
 
 LEFT_OUT=""
 RIGHT_OUT=""
@@ -24,6 +27,19 @@ started_showkeys=0
 showkeys_pid=""
 keep_variant=""
 last_variant=""
+wall_ws="applemax-wall"
+wall_pid_left=""
+wall_pid_right=""
+scene_ids=()
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --wall) WALL_MODE=1; shift ;;
+    --no-spawn-scene) SPAWN_SCENE=0; shift ;;
+    --ratio) CANVAS_RATIO="${2:-50/50}"; shift 2 ;;
+    *) shift ;;
+  esac
+done
 
 sleep_short() { sleep "${1:-$SLEEP_SCENE}"; }
 
@@ -82,8 +98,50 @@ start_gromit() {
   started_gromit=1
 }
 
+spawn_scene_windows() {
+  local variant="$1"
+  local term id i t
+  local titles=("AMX-${variant}-A" "AMX-${variant}-B" "AMX-${variant}-C" "AMX-${variant}-D")
+  term="$(apex_pick_terminal || true)"
+  [[ -n "${term}" ]] || return 0
+  for t in "${titles[@]}"; do
+    apex_spawn_demo_term "${term}" "${t}"
+    sleep 0.4
+  done
+  sleep 1
+  for i in "${titles[@]}"; do
+    id="$(apex_get_window_id_by_title "${i}")"
+    [[ -n "${id}" ]] && scene_ids+=("${id}")
+  done
+}
+
+start_video_wall() {
+  [[ "${WALL_MODE}" == "1" ]] || return 0
+  command -v wl-mirror >/dev/null 2>&1 || return 0
+  niri msg action focus-monitor "${LEFT_OUT}" >/dev/null 2>&1 || true
+  niri msg action focus-workspace "${wall_ws}" >/dev/null 2>&1 || true
+
+  apex_gui_exec wl-mirror --title "AMX-WALL-${LEFT_OUT}" "${LEFT_OUT}" >/tmp/apex-wall-left.log 2>&1 &
+  wall_pid_left="$!"
+  sleep 0.4
+  apex_gui_exec wl-mirror --title "AMX-WALL-${RIGHT_OUT}" "${RIGHT_OUT}" >/tmp/apex-wall-right.log 2>&1 &
+  wall_pid_right="$!"
+  sleep 0.8
+
+  # Lightweight split tuning; ratio is optional and best-effort.
+  if [[ "${CANVAS_RATIO}" == "2/3" ]]; then
+    niri msg action set-column-width '66%' >/dev/null 2>&1 || true
+    niri msg action focus-column-left-or-last >/dev/null 2>&1 || true
+    niri msg action set-column-width '34%' >/dev/null 2>&1 || true
+  fi
+
+  toast "Video wall active on workspace ${wall_ws}."
+}
+
 cleanup() {
   apex_gui_exec gromit-mpx --clear >/dev/null 2>&1 || true
+  [[ -n "${wall_pid_left}" ]] && kill "${wall_pid_left}" >/dev/null 2>&1 || true
+  [[ -n "${wall_pid_right}" ]] && kill "${wall_pid_right}" >/dev/null 2>&1 || true
   if [[ "${started_gromit}" == "1" ]]; then
     apex_gui_exec gromit-mpx --quit >/dev/null 2>&1 || true
   fi
@@ -161,9 +219,14 @@ show_variant() {
 
   "${HOME}/.config/apex/scripts/apex-max-variant" apply "${variant}" >/dev/null
   last_variant="${variant}"
+
+  if [[ "${SPAWN_SCENE}" == "1" ]]; then
+    spawn_scene_windows "${variant}"
+  fi
+
   draw_monitor_callouts
-  apex_popup_info "Variant: ${variant}\n\nBlue arrows: across-bezel motion.\nGreen/yellow arrows: left/right zones.\n\nKey overlay is enabled while demo runs." "AppleMax Live Spotlight"
-  toast "Running ${variant} with live arrows."
+  apex_popup_info "Variant: ${variant}\n\nLive windows launched: ${SPAWN_SCENE}\nVideo wall mode: ${WALL_MODE}\n\nBlue arrows: cross-bezel routing." "AppleMax Live Spotlight"
+  toast "Running ${variant} live demo."
 
   focus_workspace_side "${left_a}" left
   focus_workspace_side "${left_b}" left
@@ -187,8 +250,9 @@ apex_capture_state
 detect_outputs
 start_showkeys
 start_gromit
+start_video_wall
 
-toast "Live spotlight demo starting for ${LEFT_OUT} (left) and ${RIGHT_OUT} (right)."
+toast "Live spotlight demo: ${LEFT_OUT} left, ${RIGHT_OUT} right."
 
 for v in "${VARIANTS[@]}"; do
   show_variant "${v}"
@@ -203,4 +267,4 @@ if [[ -z "${keep_variant}" ]]; then
 fi
 
 toast "Kept variant: ${keep_variant}."
-apex_popup_info "Active variant kept: ${keep_variant}\n\nUse ~/.config/apex/scripts/apex-max-show again anytime." "AppleMax Done"
+apex_popup_info "Active variant kept: ${keep_variant}\n\nRun again with:\n~/.config/apex/scripts/apex-max-show --wall --ratio 2/3" "AppleMax Done"

@@ -9,6 +9,8 @@ AppleMax is a modular Niri profile pack built as separate KDL patches with a sin
 
 ## DMS Integration
 - This repo pins DMS as a git submodule at [`../dms`](../dms).
+- This repo also pins the DMS display-mirroring plugin as a submodule at
+  [`../third_party/dms-display-mirror`](../third_party/dms-display-mirror).
 - AppleMax layer rules already target DMS namespaces like `dms:bar` and `dms:toast`.
 - For DMS-generated Niri overrides, include `~/.config/niri/dms/*.kdl` in `config.kdl`.
 - AppleMax startup policy is codified as: **DMS primary, Waybar fallback** (never both).
@@ -126,9 +128,20 @@ Direct launcher (same engine):
 ~/.config/apex/scripts/apex-max-show
 ```
 
+Wall + spotlight mode (spawns real demo windows + optional wl-mirror wall):
+```bash
+~/.config/apex/scripts/apex-max-show --wall --ratio 2/3
+```
+
 For best live callouts, install:
 ```bash
 paru -S --needed gromit-mpx showmethekey
+paru -S --needed wl-mirror
+```
+
+Nested shell demo (isolated, no logout, no mutation of active niri/DMS session):
+```bash
+~/.config/apex/scripts/apex-nested-shell-demo 3840x1440
 ```
 
 Live demo:

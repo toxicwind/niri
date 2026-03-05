@@ -1,3 +1,6 @@
 [submodule "contrib/dms"]
 	path = contrib/dms
 	url = https://github.com/toxicwind/DankMaterialShell.git
+[submodule "contrib/third_party/dms-display-mirror"]
+	path = contrib/third_party/dms-display-mirror
+	url = https://github.com/jfchenier/dms-display-mirror.git
